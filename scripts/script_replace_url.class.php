@@ -5,7 +5,20 @@ require_once('agora_script_base.class.php');
 class script_replace_url extends agora_script_base {
 
     public $title = 'Reemplaça la URL base d\'Àgora-Nodes';
-    public $info = "La URL de destí serà WP_SITEURL, add_ccentre é sun booleà que defineix si a la origin_url se li afegeix el nom del centre al final. origin_url i origin_bd poden ser llistes separades per comes (sense espais)";
+    public $info = "
+    <ul>
+    <li>add_ccentre és un booleà que defineix si a la origin_url se li afegeix el nom del centre al final. (útil quan es més d'un centre a l'hora)
+    <li>La URL ha d'acabar amb / al final
+    <li>La URL de destí sempre serà WP_SITEURL (del centre en particular)
+    <li>Si la URL o la BD són buides no farà el replace de URL o DB respectivament
+    <li>origin_url i origin_bd poden ser llistes separades per comes (sense espais)
+    <li>La BD de destí sempre serà DB_NAME
+    </ul>
+    Exemple:
+    <ul><li>origin_url = http://agora/agora/,https://agora/agora/
+    <li>origin_bd = DB-int
+    <li>add_ccentre = 1</ul>
+    ";
 
     public function params() {
         $params = array();
