@@ -5,9 +5,9 @@
  */
 
 /**
- * Decide if user has full access. In Àgora must be xtecadmin and 
+ * Decide if user has full access. In Àgora must be xtecadmin and
  * in XTECBlocs must be network admin.
- * 
+ *
  * @global boolean $isAgora
  * @global boolean $isBlocs
  * @return boolean
@@ -15,15 +15,15 @@
 function is_xtec_super_admin() {
 
     global $isAgora, $isBlocs;
-    
+
     if ($isAgora && is_xtecadmin()) {
         return true;
     }
-    
+
     if ($isBlocs && is_super_admin()) {
         return true;
     }
-    
+
     return false;
 }
 
@@ -120,20 +120,20 @@ function save_stats() {
 }
 
 /**
- * 
+ * This action is called from agora-functions.php
+ * Remove all wp-stats content from one year ago
  * @global type $wpdb
- * @author Toni Ginard
+ * @author Toni Ginard, Nacho Abejaro
  */
 function remove_old_stats() {
-    
-    global $wpdb;
+	global $wpdb;
 
-    $datetime = date('Y-m-d H:i:s', time() - 31104000); // 31104000 = 6 * 30 * 24 * 60 * 60 * 2 (12 month)
-    
-    $wpdb->query( "DELETE FROM $wpdb->stats WHERE datetime < '$datetime'");
-    
+	$time = strtotime("-1 year", time());
+	$datetime = date('Y-m-d H:i:s', $time);
+
+    $table = $wpdb->prefix . "stats";
+    $wpdb->query( "DELETE FROM `$table` WHERE datetime < '$datetime' ");
 }
-
 
 function parse_cli_args() {
     global $cliargs;
