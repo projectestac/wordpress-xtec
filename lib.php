@@ -5,40 +5,36 @@
  */
 
 /**
+ * Deprecated use is_xtec_blocs_admin instead
+ */
+function is_xtec_super_admin() {
+    return is_xtecadmin() || is_blocsadmin();
+}
+
+/**
  * Decide if user has full access. In Àgora must be xtecadmin and
  * in XTECBlocs must be network admin.
  *
- * @global boolean $isAgora
- * @global boolean $isBlocs
  * @return boolean
  */
-function is_xtec_super_admin() {
-
-    global $isAgora, $isBlocs;
-
-    if ($isAgora && is_xtecadmin()) {
-        return true;
-    }
-
-    if ($isBlocs && is_super_admin()) {
-        return true;
-    }
-
-    return false;
+function is_xtec_blocs_admin() {
+    return is_xtecadmin() || is_blocsadmin();
 }
 
 /*
- * Check if current logged user is xtecadmin
+ * Check if current logged user is Agora xtecadmin
  */
 function is_xtecadmin() {
+    global $current_user, $isAgora;
+    return $isAgora && isset($current_user->user_login) && ($current_user->user_login == 'xtecadmin');
+}
 
-    global $current_user;
-
-    if (isset($current_user->user_login) && ($current_user->user_login == 'xtecadmin')) {
-        return true;
-    } else {
-        return false;
-    }
+/*
+ * Check if current logged user is blocs admin
+ */
+function is_blocsadmin() {
+    global $isBlocs;
+    return $isBlocs && is_super_admin();
 }
 
 /*
