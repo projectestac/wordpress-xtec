@@ -8,13 +8,9 @@
  * Decide if user has full access. In Àgora must be xtecadmin and
  * in XTECBlocs must be network admin.
  *
- * @global boolean $isAgora
- * @global boolean $isBlocs
  * @return boolean
  */
 function is_xtec_blocs_admin() {
-
-    global $isAgora, $isBlocs;
 
     if (is_xtecadmin()) {
         return true;
