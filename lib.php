@@ -12,16 +12,16 @@
  * @global boolean $isBlocs
  * @return boolean
  */
-function is_xtec_super_admin() {
+function is_xtec_blocs_admin() {
 
     global $isAgora, $isBlocs;
 
-    if ($isAgora && is_xtecadmin()) {
+    if (is_xtecadmin()) {
         return true;
     }
 
-    if ($isBlocs && is_super_admin()) {
-        return true;
+    if (is_blocsadmin()) {
+    	return true;
     }
 
     return false;
