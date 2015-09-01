@@ -5,19 +5,12 @@
  */
 
 /**
- * Deprecated use is_xtec_blocs_admin instead
- */
-function is_xtec_super_admin() {
-    return is_xtecadmin() || is_blocsadmin();
-}
-
-/**
  * Decide if user has full access. In Àgora must be xtecadmin and
  * in XTECBlocs must be network admin.
  *
  * @return boolean
  */
-function is_xtec_blocs_admin() {
+function is_xtec_super_admin() {
     return is_xtecadmin() || is_blocsadmin();
 }
 
