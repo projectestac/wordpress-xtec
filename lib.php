@@ -5,6 +5,26 @@
  */
 
 /**
+ * Decide if current installation is XTECBlocs or not
+ *
+ * @return boolean
+ */
+function is_xtecblocs() {
+    global $isBlocs;
+    return $isBlocs;
+}
+
+/**
+ * Decide if current installation is Àgora or not
+ *
+ * @return boolean
+ */
+function is_agora() {
+    global $isAgora;
+    return $isAgora;
+}
+
+/**
  * Decide if user has full access. In Àgora must be xtecadmin and
  * in XTECBlocs must be network admin.
  *
