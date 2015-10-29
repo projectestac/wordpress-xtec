@@ -43,7 +43,9 @@ class script_enable_service extends agora_script_base {
         $dbModels = explode(',', $params['DBNodesModel']);
 
         update_option('blogname', $clientName);
-        update_option('blogdescription', 'Espai del centre ' . $clientName);
+
+        // Don't change default blog description
+        //update_option('blogdescription', 'Espai del centre ' . $clientName);
 
         $siteURL = WP_SITEURL;
         update_option('siteurl', $siteURL);
