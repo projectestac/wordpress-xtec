@@ -15,8 +15,8 @@ class script_replace_url extends agora_script_base {
     <li>La BD de destí sempre serà DB_NAME
     </ul>
     Exemple:
-    <ul><li>origin_url = http://agora/agora/,https://agora/agora/
-    <li>origin_bd = DB-int
+    <ul><li>origin_url = ://agora/agora/,://agora-virtual.xtec.cat/agora/
+    <li>origin_bd = DB-int,DB-pro
     <li>add_ccentre = 1</ul>
     ";
 
@@ -31,57 +31,71 @@ class script_replace_url extends agora_script_base {
     protected function _execute($params = array()) {
         global $agora, $wpdb;
 
-
         // If this is specified, only replace URLs
         if ($params['origin_url']) {
+            $params['origin_url'] = str_replace('http://', '://', $params['origin_url']);
+            $params['origin_url'] = str_replace('https://', '://', $params['origin_url']);
             $replaceURL = explode(',', $params['origin_url']);
+            $replaceURL = array_map('trim', $replaceURL);
             if ($params['add_ccentre']) {
                 foreach($replaceURL as $i => $url) {
                     $replaceURL[$i] .= CENTRE.'/';
                 }
             }
+            $this->output("URL origen: ");
+            $this->output($replaceURL);
         } else {
-            $replaceURL = false;
-        }
-
-        if ($params['origin_bd']) {
-            $replaceDB = explode(',', $params['origin_bd']);
-        } else {
-            $replaceDB = false;
+            $replaceURL = array();
         }
 
         $siteURL = WP_SITEURL;
-        update_option('siteurl', $siteURL);
-        update_option('home', $siteURL);
-        update_option('wsl_settings_redirect_url', $siteURL);
+        $siteURL = str_replace('http://', '://', $siteURL);
+        $siteURL = str_replace('https://', '://', $siteURL);
+        $this->output("URL destí: ".$siteURL);
 
-        if ($replaceURL) {
-            echo "Replace URL's\n";
-            $replace = array('bp_activity' => array('action' => false,
-                                                    'content' => false,
-                                                    'primary_link' => false),
-                            'posts' => array('post_content' => false,
-                                            'post_excerpt' => false,
-                                            'guid' => false),
-                            'postmeta' => array('meta_value' => "meta_key = '_menu_item_url'")
-                        );
-            foreach ($replace as $tablename => $fields) {
-                foreach ($fields as $fieldname => $and) {
-                    foreach ($replaceURL as $string) {
-                        if (!$this->replace_sql($tablename, $fieldname, $string, $siteURL, $and)) {
-                            return false;
-                        }
+        if ($params['origin_bd']) {
+            $replaceDB = explode(',', $params['origin_bd']);
+            $replaceDB = array_map('trim', $replaceDB);
+            $this->output("DB origen: ");
+            $this->output($replaceDB);
+            $this->output("DB destí: ".DB_NAME);
+        } else {
+            $replaceDB = array();
+        }
+
+        update_option('siteurl', WP_SITEURL);
+        update_option('home', WP_SITEURL);
+        update_option('wsl_settings_redirect_url', WP_SITEURL);
+
+        $replace = array('bp_activity' => array('action' => false,
+                                                'content' => false,
+                                                'primary_link' => false),
+                        'posts' => array('post_content' => false,
+                                        'post_excerpt' => false,
+                                        'guid' => false),
+                        'postmeta' => array('meta_value' => "meta_key = '_menu_item_url'")
+                    );
+        foreach ($replace as $tablename => $fields) {
+            foreach ($fields as $fieldname => $and) {
+                foreach ($replaceURL as $string) {
+                    if (!$this->replace_sql($tablename, $fieldname, $string, $siteURL, $and)) {
+                        return false;
+                    }
+                }
+
+                foreach ($replaceDB as $dbModel) {
+                    if (!$this->replace_sql($tablename, $fieldname, '/'.$dbModel.'/', '/'.DB_NAME.'/')) {
+                        return false;
                     }
                 }
             }
         }
 
         if ($replaceDB) {
-            echo "Replace database names\n";
-            $replacedb = array('bp_activity' => array('content'),
+            $replace = array('bp_activity' => array('content'),
                             'posts' => array('post_content', 'guid')
                         );
-            foreach ($replacedb as $tablename => $fields) {
+            foreach ($replace as $tablename => $fields) {
                 foreach ($fields as $fieldname) {
                     foreach ($replaceDB as $dbModel) {
                         if (!$this->replace_sql($tablename, $fieldname, '/'.$dbModel.'/', '/'.DB_NAME.'/')) {
@@ -98,20 +112,33 @@ class script_replace_url extends agora_script_base {
             $value = get_option($option);
 
             // Update URL recursively
-            if ($replaceURL) {
-                foreach ($replaceURL as $string) {
-                    $value = $this->replaceTree($string, $siteURL, $value);
-                }
+            foreach ($replaceURL as $string) {
+                $value = $this->replaceTree($string, $siteURL, $value);
             }
 
-            if ($replaceDB) {
-                // Update user database recursively
-                foreach ($replaceDB as $dbModel) {
-                    $value = $this->replaceTree(trim($dbModel), DB_NAME, $value);
-                }
+            // Update user database recursively
+            foreach ($replaceDB as $dbModel) {
+                $value = $this->replaceTree(trim($dbModel), DB_NAME, $value);
             }
 
             update_option($option, $value);
+        }
+
+        if ($replaceURL) {
+            echo "Update slides URLs\n";
+
+            $rows = $wpdb->get_results("SELECT meta_id, meta_value FROM $wpdb->postmeta WHERE meta_key = 'slides'");
+            if ($rows) {
+                foreach ($rows as $row) {
+                    $value = $row->meta_value;
+
+                    foreach ($replaceURL as $string) {
+                        $value = $this->replaceTree($string, $siteURL, $value);
+                    }
+
+                    $this->execute_sql("UPDATE $wpdb->postmeta set meta_value = '$value' WHERE meta_id = $row->meta_id;");
+                }
+            }
         }
 
         return true;
@@ -145,6 +172,12 @@ class script_replace_url extends agora_script_base {
     private function replaceTree($search = '', $replace = '', $array = false) {
 
         if (!is_array($array)) {
+            if ($this->is_serialized($array)) {
+                $array = unserialize($array);
+                $value = $this->replaceTree($search, $replace, $array);
+                // Escape apostrophes for MySQL
+                return str_replace("'", "''", serialize($value));
+            }
             // Regular replace
             return str_replace($search, $replace, $array);
         }
@@ -156,5 +189,15 @@ class script_replace_url extends agora_script_base {
         }
 
         return $newArray;
+    }
+
+    /**
+     * Checks if a value is serialized
+     * @author Toni Ginard
+     * @return boolean true or false
+     */
+    private function is_serialized($data) {
+        $data_unserialized = @unserialize($data);
+        return ($data === 'b:0;' || $data_unserialized !== false);
     }
 }

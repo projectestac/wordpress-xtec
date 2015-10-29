@@ -10,14 +10,21 @@ class agora_script_base{
 		return $params;
 	}
 
-	function execute() {
+	function execute($params = false) {
 		if ($this->can_be_executed()) {
 			$starttime = microtime();
 
 			echo $this->title."\n";
 
-			$params = $this->get_request_params();
-			$return  = $this->_execute($params);
+            if (!$params) {
+                $params = $this->get_request_params();
+            }
+
+            try {
+				$return = $this->_execute($params);
+			} catch (Exception $e) {
+				echo $e->getMessage();
+			}
 
 			$difftime = self::microtime_diff($starttime, microtime());
 
@@ -52,4 +59,31 @@ class agora_script_base{
 	protected function can_be_executed($params = array()) {
 		return true;
 	}
+
+        protected function output($message, $type = "") {
+        if (is_object($message) || is_array($message)) {
+            print_r($message);
+            return;
+        }
+
+        if (!empty($type)) {
+            $message = $type.': '.$message;
+        }
+        echo $message."\n";
+        return;
+    }
+
+    protected function execute_suboperation($function, $params = array()) {
+        $function = 'script_'.$function;
+        $filename = $function.'.class.php';
+        $basedir = dirname(__FILE__).'/';
+        if (!file_exists($basedir.$filename)) {
+            $this->output("File $basedir $filename does not exists", 'ERROR');
+            return false;
+        }
+        require_once($filename);
+        $script = new $function();
+        return $script->execute($params);
+    }
+
 }
