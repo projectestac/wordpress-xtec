@@ -14,7 +14,7 @@ class script_enable_service extends agora_script_base {
         $params['clientAddress'] = "";
         $params['clientCity'] = "";
         $params['clientPC'] = ""; // Postal Code
-        $params['clientDNS'] = "";
+        $params['clientDNS'] = ""; // Not used
         $params['clientCode'] = "";
 
         $params['URLNodesModelBase'] = "";
@@ -27,44 +27,46 @@ class script_enable_service extends agora_script_base {
     protected function _execute($params = array()) {
         global $agora, $wpdb;
 
-        $urlModelBase = $params['URLNodesModelBase'];
-        $shortcodes = explode(',', $params['shortcodes']);
-        foreach ($shortcodes as $scode) {
-            $urlModels[] = $urlModelBase . $scode . '/';
-        }
-
         // Get the params
         $clientName = $params['clientName'];
         $clientAddress = $params['clientAddress'];
-        $clientCity = $params['clientCity'];
-        $clientPC = $params['clientPC']; // Post Code
-        $clientDNS = $params['clientDNS'];
-        $clientCode = $params['clientCode'];
-        $dbModels = explode(',', $params['DBNodesModel']);
+        $clientPCCity = $params['clientPC'] . ' ' . $params['clientCity']; // Post Code and City
+        $adminMail = $params['clientCode'] . '@xtec.cat';
 
+        echo "Set Blog name\n";
         update_option('blogname', $clientName);
-
+        update_option('nodesbox_name', $clientName);
         // Don't change default blog description
         //update_option('blogdescription', 'Espai del centre ' . $clientName);
 
-        $siteURL = WP_SITEURL;
-        update_option('siteurl', $siteURL);
-        update_option('home', $siteURL);
-        update_option('wsl_settings_redirect_url', $siteURL);
+        echo "Set Admin mail\n";
+        update_option('admin_email', $adminMail);
 
-        update_option('admin_email', $clientCode . '@xtec.cat');
+        echo "Set Site URL\n";
+        update_option('siteurl', WP_SITEURL);
+        update_option('home', WP_SITEURL);
+        update_option('wsl_settings_redirect_url', WP_SITEURL);
 
+        echo "Update school name and address\n";
+        $value = get_option('reactor_options');
+        $value['nomCanonicCentre'] = $clientName;
+        $value['direccioCentre'] = $clientAddress;
+        $value['cpCentre'] = $clientPCCity;
+        $value['nomCanonicCentre'] = $clientName;
+        update_option('reactor_options', $value);
+
+        echo "Configure admin and xtecadmin users\n";
         $user = get_user_by('login', 'admin');
         $user_id = wp_update_user(array(
             'ID' => $user->id,
-            'user_email' => $clientCode.'@xtec.cat',
+            'user_email' => $adminMail,
             'user_registered' => time()
         ));
         if ( is_wp_error( $user_id ) ) {
             echo 'Error actualitzant usuari admin';
             return false;
         }
-        $wpdb->update($wpdb->users, array('user_pass' => $params['password']), array('ID' => $user_id) );
+        $wpdb->update($wpdb->users, array('user_pass' => $params['password']), array('ID' => $user->id) );
 
         $user = get_user_by('login', 'xtecadmin');
         $user_id = wp_update_user(array(
@@ -75,73 +77,36 @@ class script_enable_service extends agora_script_base {
             echo 'Error actualitzant usuari xtecadmin';
             return false;
         }
-        $wpdb->update($wpdb->users, array('user_pass' => $agora['xtecadmin']['password']), array('ID' => $user_id) );
-
-        echo "Replace URL's\n";
-        $replace = array('bp_activity' => array('action' => false,
-                                                'content' => false,
-                                                'primary_link' => false),
-                        'posts' => array('post_content' => false,
-                                        'post_excerpt' => false,
-                                        'guid' => false),
-                        'postmeta' => array('meta_value' => "meta_key = '_menu_item_url'")
-                    );
-        foreach ($replace as $tablename => $fields) {
-            foreach ($fields as $fieldname => $and) {
-                foreach ($urlModels as $string) {
-                    if (!$this->replace_sql($tablename, $fieldname, $string, $siteURL, $and)) {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        echo "Replace database names\n";
-        $replacedb = array('bp_activity' => array('content'),
-                        'posts' => array('post_content', 'guid')
-                    );
-        foreach ($replacedb as $tablename => $fields) {
-            foreach ($fields as $fieldname) {
-                foreach ($dbModels as $dbModel) {
-                    if (!$this->replace_sql($tablename, $fieldname, '/'.$dbModel.'/', '/'.DB_NAME.'/')) {
-                        return false;
-                    }
-                }
-            }
-        }
+        $wpdb->update($wpdb->users, array('user_pass' => $agora['xtecadmin']['password']), array('ID' => $user->id) );
 
         echo "Reset stats table\n";
         if (!$this->execute_sql('TRUNCATE '.$wpdb->prefix.'stats')) {
             return false;
         }
 
-        echo "Update serialized wp_options fields\n";
-        $options = array ('my_option_name', 'widget_text', 'reactor_options', 'widget_socialmedia_widget', 'widget_xtec_widget', 'widget_grup_classe_widget');
-        foreach ($options as $option) {
-            $value = get_option($option);
+        //Time to replace URLs and Database
+        $urlModelBase = $params['URLNodesModelBase'];
+        $urlModelBase = str_replace('http://', '://', $urlModelBase);
+        $urlModelBase = str_replace('https://', '://', $urlModelBase);
 
-            // Update URL recursively
-            foreach ($urlModels as $string) {
-                $value = $this->replaceTree($string, $siteURL, $value);
-            }
-
-            // Update user database recursively
-            foreach ($dbModels as $dbModel) {
-                $value = $this->replaceTree(trim($dbModel), DB_NAME, $value);
-            }
-
-            if ($option == 'reactor_options') {
-                // Update school name and address
-                $value['nomCanonicCentre'] = $clientName;
-                $value['direccioCentre'] = $clientAddress;
-                $value['cpCentre'] = $clientPC . ' ' . $clientCity;
-                $value['nomCanonicCentre'] = $clientName;
-            }
-
-            update_option($option, $value);
+        $shortcodes = explode(',', $params['shortcodes']);
+        $shortcodes = array_map('trim', $shortcodes);
+        $replaceURL = array();
+        foreach ($shortcodes as $scode) {
+            $replaceURL[] = $urlModelBase . $scode . '/';
         }
 
-        return true;
+        $success = $this->execute_suboperation('replace_url', array(
+                'origin_url' => implode(',', $replaceURL),
+                'origin_bd' => $params['DBNodesModel']));
+
+        if (!$success) {
+            echo "Ha fallat replace_url\n";
+            return false;
+        }
+
+        // Upgrade WordPress
+        return $this->execute_suboperation('upgrade');
     }
 
     private function execute_sql($sql) {
@@ -153,35 +118,5 @@ class script_enable_service extends agora_script_base {
         }
         $wpdb->show_errors();
         return true;
-    }
-
-    private function replace_sql($table, $field, $search, $replace, $and = false) {
-        global $wpdb;
-        $tablename = $wpdb->prefix.$table;
-        $sql = "UPDATE $tablename SET `$field` = REPLACE (`$field` , '$search', '$replace')
-                WHERE `$field` like '%$search%'";
-        if ($and) {
-            $sql .= "AND $and";
-        }
-        if (!$this->execute_sql($sql)) {
-            return false;
-        }
-        return true;
-    }
-
-    private function replaceTree($search = '', $replace = '', $array = false) {
-
-        if (!is_array($array)) {
-            // Regular replace
-            return str_replace($search, $replace, $array);
-        }
-
-        $newArray = array();
-        foreach ($array as $k => $v) {
-            // Recursive call
-            $newArray[$k] = $this->replaceTree($search, $replace, $v);
-        }
-
-        return $newArray;
     }
 }
