@@ -7,7 +7,7 @@ $script = get_cli_arg('s');
 echo "Start server Time: ".date('r', time())."\n";
 
 set_time_limit(0);
-try{
+try {
     $success = scripts_execute_script($script);
 } catch (Exception $e){
     $success = false;
@@ -18,6 +18,7 @@ echo "End server Time: ".date('r', time())."\n";
 
 if ($success) {
 	echo 'Script '.$script.' succeed'."\n";
+    echo 'success';
 	exit (0);
 } else {
 	echo 'Script '.$script.' failed'."\n";
