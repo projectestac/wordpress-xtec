@@ -4,6 +4,10 @@
  * This file contains extra functions for Agora and XTECBlocs services
  */
 
+CONST XTECADMIN_USERNAME = 'xtecadmin';
+CONST ADMIN_USERNAME = 'admin';
+
+
 /**
  * Decide if current installation is XTECBlocs or not
  *
@@ -51,7 +55,8 @@ function is_blocsadmin() {
 }
 
 /*
- * Get the ID of xtecadmin user
+ * Get the ID of xtecadmin user.
+ * Deprecated. Use constant instead of this.
  *
  * return int ID of xtecadmin
  */
