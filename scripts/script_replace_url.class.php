@@ -118,7 +118,7 @@ class script_replace_url extends agora_script_base {
 
             // Update user database recursively
             foreach ($replaceDB as $dbModel) {
-                $value = $this->replaceTree(trim($dbModel), DB_NAME, $value);
+                $value = $this->replaceTree('/'.trim($dbModel).'/', '/'.DB_NAME.'/', $value);
             }
 
             update_option($option, $value);
