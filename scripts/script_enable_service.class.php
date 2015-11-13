@@ -17,9 +17,8 @@ class script_enable_service extends agora_script_base {
         $params['clientDNS'] = ""; // Not used
         $params['clientCode'] = "";
 
-        $params['URLNodesModelBase'] = "";
-        $params['shortcodes'] = "";
-        $params['DBNodesModel'] = "";
+        $params['origin_url'] = "";
+        $params['origin_bd'] = "";
 
         return $params;
     }
@@ -84,21 +83,9 @@ class script_enable_service extends agora_script_base {
             return false;
         }
 
-        //Time to replace URLs and Database
-        $urlModelBase = $params['URLNodesModelBase'];
-        $urlModelBase = str_replace('http://', '://', $urlModelBase);
-        $urlModelBase = str_replace('https://', '://', $urlModelBase);
-
-        $shortcodes = explode(',', $params['shortcodes']);
-        $shortcodes = array_map('trim', $shortcodes);
-        $replaceURL = array();
-        foreach ($shortcodes as $scode) {
-            $replaceURL[] = $urlModelBase . $scode . '/';
-        }
-
         $success = $this->execute_suboperation('replace_url', array(
-                'origin_url' => implode(',', $replaceURL),
-                'origin_bd' => $params['DBNodesModel']));
+                'origin_url' => $params['origin_url'],
+                'origin_bd' => $params['origin_bd']));
 
         if (!$success) {
             echo "Ha fallat replace_url\n";

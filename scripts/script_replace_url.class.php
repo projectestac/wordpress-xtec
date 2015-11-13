@@ -11,12 +11,11 @@ class script_replace_url extends agora_script_base {
     <li>La URL ha d'acabar amb / al final
     <li>La URL de destí sempre serà WP_SITEURL (del centre en particular)
     <li>Si la URL o la BD són buides no farà el replace de URL o DB respectivament
-    <li>origin_url i origin_bd poden ser llistes separades per comes (sense espais)
     <li>La BD de destí sempre serà DB_NAME
     </ul>
     Exemple:
-    <ul><li>origin_url = ://agora/agora/,://agora-virtual.xtec.cat/agora/
-    <li>origin_bd = DB-int,DB-pro
+    <ul><li>origin_url = ://agora/agora/
+    <li>origin_bd = DB-int
     <li>add_ccentre = 1</ul>
     ";
 
@@ -29,23 +28,19 @@ class script_replace_url extends agora_script_base {
     }
 
     protected function _execute($params = array()) {
-        global $agora, $wpdb;
+        global $wpdb;
 
         // If this is specified, only replace URLs
         if ($params['origin_url']) {
             $params['origin_url'] = str_replace('http://', '://', $params['origin_url']);
             $params['origin_url'] = str_replace('https://', '://', $params['origin_url']);
-            $replaceURL = explode(',', $params['origin_url']);
-            $replaceURL = array_map('trim', $replaceURL);
+            $replaceURL = trim($params['origin_url']);
             if ($params['add_ccentre']) {
-                foreach($replaceURL as $i => $url) {
-                    $replaceURL[$i] .= CENTRE.'/';
-                }
+                $replaceURL .= CENTRE.'/';
             }
-            $this->output("URL origen: ");
-            $this->output($replaceURL);
+            $this->output("URL origen: ".$replaceURL);
         } else {
-            $replaceURL = array();
+            $replaceURL = false;
         }
 
         $siteURL = WP_SITEURL;
@@ -54,13 +49,11 @@ class script_replace_url extends agora_script_base {
         $this->output("URL destí: ".$siteURL);
 
         if ($params['origin_bd']) {
-            $replaceDB = explode(',', $params['origin_bd']);
-            $replaceDB = array_map('trim', $replaceDB);
-            $this->output("DB origen: ");
-            $this->output($replaceDB);
+            $replaceDB = trim($params['origin_bd']);
+            $this->output("DB origen: ".$replaceDB);
             $this->output("DB destí: ".DB_NAME);
         } else {
-            $replaceDB = array();
+            $replaceDB = false;
         }
 
         update_option('siteurl', WP_SITEURL);
@@ -77,14 +70,14 @@ class script_replace_url extends agora_script_base {
                     );
         foreach ($replace as $tablename => $fields) {
             foreach ($fields as $fieldname => $and) {
-                foreach ($replaceURL as $string) {
-                    if (!$this->replace_sql($tablename, $fieldname, $string, $siteURL, $and)) {
+                if ($replaceURL) {
+                    if (!$this->replace_sql($tablename, $fieldname, $replaceURL, $siteURL, $and)) {
                         return false;
                     }
                 }
 
-                foreach ($replaceDB as $dbModel) {
-                    if (!$this->replace_sql($tablename, $fieldname, '/'.$dbModel.'/', '/'.DB_NAME.'/')) {
+                if ($replaceDB) {
+                    if (!$this->replace_sql($tablename, $fieldname, '/' . $replaceDB . '/', '/' . DB_NAME . '/')) {
                         return false;
                     }
                 }
@@ -97,10 +90,8 @@ class script_replace_url extends agora_script_base {
                         );
             foreach ($replace as $tablename => $fields) {
                 foreach ($fields as $fieldname) {
-                    foreach ($replaceDB as $dbModel) {
-                        if (!$this->replace_sql($tablename, $fieldname, '/'.$dbModel.'/', '/'.DB_NAME.'/')) {
-                            return false;
-                        }
+                    if (!$this->replace_sql($tablename, $fieldname, '/'.$replaceDB.'/', '/'.DB_NAME.'/')) {
+                        return false;
                     }
                 }
             }
@@ -112,13 +103,13 @@ class script_replace_url extends agora_script_base {
             $value = get_option($option);
 
             // Update URL recursively
-            foreach ($replaceURL as $string) {
-                $value = $this->replaceTree($string, $siteURL, $value);
+            if ($replaceURL) {
+                $value = $this->replaceTree($replaceURL, $siteURL, $value);
             }
 
             // Update user database recursively
-            foreach ($replaceDB as $dbModel) {
-                $value = $this->replaceTree('/'.trim($dbModel).'/', '/'.DB_NAME.'/', $value);
+            if ($replaceDB) {
+                $value = $this->replaceTree('/'.$replaceDB.'/', '/'.DB_NAME.'/', $value);
             }
 
             update_option($option, $value);
@@ -130,12 +121,7 @@ class script_replace_url extends agora_script_base {
             $rows = $wpdb->get_results("SELECT meta_id, meta_value FROM $wpdb->postmeta WHERE meta_key = 'slides'");
             if ($rows) {
                 foreach ($rows as $row) {
-                    $value = $row->meta_value;
-
-                    foreach ($replaceURL as $string) {
-                        $value = $this->replaceTree($string, $siteURL, $value);
-                    }
-
+                    $value = $this->replaceTree($replaceURL, $siteURL, $row->meta_value);
                     $this->execute_sql("UPDATE $wpdb->postmeta set meta_value = '$value' WHERE meta_id = $row->meta_id;");
                 }
             }
@@ -157,6 +143,11 @@ class script_replace_url extends agora_script_base {
 
     private function replace_sql($table, $field, $search, $replace, $and = false) {
         global $wpdb;
+
+        if (empty($search) || empty($replace)) {
+            return true;
+        }
+
         $tablename = $wpdb->prefix.$table;
         $sql = "UPDATE $tablename SET `$field` = REPLACE (`$field` , '$search', '$replace')
                 WHERE `$field` like '%$search%'";
@@ -170,6 +161,9 @@ class script_replace_url extends agora_script_base {
     }
 
     private function replaceTree($search = '', $replace = '', $array = false) {
+        if (empty($search) || empty($replace)) {
+            return $array;
+        }
 
         if (!is_array($array)) {
             if ($this->is_serialized($array)) {
