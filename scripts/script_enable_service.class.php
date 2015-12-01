@@ -33,6 +33,7 @@ class script_enable_service extends agora_script_base {
         $adminMail = $params['clientCode'] . '@xtec.cat';
 
         echo "Set Blog name\n";
+        $this->output($clientName);
         update_option('blogname', $clientName);
         update_option('nodesbox_name', $clientName);
         // Don't change default blog description

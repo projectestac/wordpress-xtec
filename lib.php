@@ -169,6 +169,7 @@ function parse_cli_args() {
             } else {
                 $key = array_shift($parts);
                 $value = implode('=', $parts);
+                $value = str_replace("\\'", "'", $value);
             }
             $cliargs[$key] = $value;
 
@@ -181,6 +182,7 @@ function parse_cli_args() {
             } else {
                 $key = array_shift($parts);
                 $value = implode('=', $parts);
+                $value = str_replace("\\'", "'", $value);
             }
             $cliargs[$key] = $value;
         }
