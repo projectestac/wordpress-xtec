@@ -32,22 +32,21 @@ class script_enable_service extends agora_script_base {
         $clientPCCity = $params['clientPC'] . ' ' . $params['clientCity']; // Post Code and City
         $adminMail = $params['clientCode'] . '@xtec.cat';
 
-        echo "Set Blog name\n";
-        $this->output($clientName);
+        $this->output("Set Blog name $clientName");
         update_option('blogname', $clientName);
         update_option('nodesbox_name', $clientName);
         // Don't change default blog description
         //update_option('blogdescription', 'Espai del centre ' . $clientName);
 
-        echo "Set Admin mail\n";
+        $this->output('Set Admin mail');
         update_option('admin_email', $adminMail);
 
-        echo "Set Site URL\n";
+        $this->output("Set Site URL");
         update_option('siteurl', WP_SITEURL);
         update_option('home', WP_SITEURL);
         update_option('wsl_settings_redirect_url', WP_SITEURL);
 
-        echo "Update school name and address\n";
+        $this->output('Update school name and address');
         $value = get_option('reactor_options');
         $value['nomCanonicCentre'] = $clientName;
         $value['direccioCentre'] = $clientAddress;
@@ -55,7 +54,7 @@ class script_enable_service extends agora_script_base {
         $value['nomCanonicCentre'] = $clientName;
         update_option('reactor_options', $value);
 
-        echo "Configure admin and xtecadmin users\n";
+        $this->output('Configure admin and xtecadmin users');
         $user = get_user_by('login', 'admin');
         $user_id = wp_update_user(array(
             'ID' => $user->id,
@@ -63,7 +62,7 @@ class script_enable_service extends agora_script_base {
             'user_registered' => time()
         ));
         if ( is_wp_error( $user_id ) ) {
-            echo 'Error actualitzant usuari admin';
+            $this->output('Error actualitzant usuari admin', 'ERROR');
             return false;
         }
         $wpdb->update($wpdb->users, array('user_pass' => $params['password']), array('ID' => $user->id) );
@@ -74,13 +73,14 @@ class script_enable_service extends agora_script_base {
             'user_email' => $agora['xtecadmin']['mail']
         ));
         if ( is_wp_error( $user_id ) ) {
-            echo 'Error actualitzant usuari xtecadmin';
+            $this->output('Error actualitzant usuari xtecadmin', 'ERROR');
             return false;
         }
         $wpdb->update($wpdb->users, array('user_pass' => $agora['xtecadmin']['password']), array('ID' => $user->id) );
 
-        echo "Reset stats table\n";
+        $this->output('Reset stats table');
         if (!$this->execute_sql('TRUNCATE '.$wpdb->prefix.'stats')) {
+            $this->output('Error buidant la taula stats', 'ERROR');
             return false;
         }
 
@@ -89,11 +89,12 @@ class script_enable_service extends agora_script_base {
                 'origin_bd' => $params['origin_bd']));
 
         if (!$success) {
-            echo "Ha fallat replace_url\n";
+            $this->output('Ha fallat replace_url', 'ERROR');
             return false;
         }
 
         // Upgrade WordPress
+        $this->output('Actualitza el WordPress');
         return $this->execute_suboperation('upgrade');
     }
 

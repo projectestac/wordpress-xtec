@@ -60,7 +60,7 @@ class agora_script_base{
 		return true;
 	}
 
-        protected function output($message, $type = "") {
+	protected function output($message, $type = "") {
         if (is_object($message) || is_array($message)) {
             print_r($message);
             return;

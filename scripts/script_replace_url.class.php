@@ -46,15 +46,28 @@ class script_replace_url extends agora_script_base {
         $siteURL = WP_SITEURL;
         $siteURL = str_replace('http://', '://', $siteURL);
         $siteURL = str_replace('https://', '://', $siteURL);
+
+        // Si són iguals no cal reemplaçar res
+        if ($replaceURL == $siteURL) {
+            $replaceURL = false;
+        }
+
         $this->output("URL destí: ".$siteURL);
 
         if ($params['origin_bd']) {
             $replaceDB = trim($params['origin_bd']);
-            $this->output("DB origen: ".$replaceDB);
-            $this->output("DB destí: ".DB_NAME);
+            // Si són iguals no cal reemplaçar res
+            if ($replaceDB == DB_NAME) {
+                $replaceDB = false;
+            } else {
+                $this->output("DB origen: " . $replaceDB);
+                $this->output("DB destí: " . DB_NAME);
+            }
         } else {
             $replaceDB = false;
         }
+
+
 
         update_option('siteurl', WP_SITEURL);
         update_option('home', WP_SITEURL);
@@ -66,6 +79,7 @@ class script_replace_url extends agora_script_base {
                         'posts' => array('post_content' => false,
                                         'post_excerpt' => false,
                                         'guid' => false),
+                        'term_taxonomy' => array('description' => false),
                         'postmeta' => array('meta_value' => "meta_key = '_menu_item_url'")
                     );
         foreach ($replace as $tablename => $fields) {
