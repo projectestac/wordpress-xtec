@@ -133,29 +133,33 @@ function save_stats() {
     $wpdb->insert($table, $data, array('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s'));
     
     // Update number of visits in wp_options. Exclude cron and Heartbeat actions
-    if ((strpos($uri, 'wp-cron') === false) && (strpos($uri, 'admin-ajax') === false)) {
-        
+    if ((strpos($uri, 'wp-cron') === false) && (strpos($uri, 'wp-admin') === false)) {
+
         $visits = get_option('xtec-stats-visits');
-        
-        global $wpdb;
-        
+        $include_admin = get_option('xtec-stats-include-admin');
+
         // If option is not set yet, creates it and set initial value
         if ($visits === false) {
             // Get initial value
+            global $wpdb;
             $query = "
-                SELECT count(*) AS Total FROM $table_prefix"."stats
+                SELECT count(*) AS Total FROM $table_prefix" . "stats
 				WHERE uri NOT LIKE('%wp-cron%')
-				AND uri NOT LIKE('%admin-ajax%')
+				AND uri NOT LIKE('%wp-admin%')
                 ";
             $result = $wpdb->get_results($query);
             $total = $result[0]->Total;
 
-            // Add option to table
+            // Add options to table
             add_option('xtec-stats-visits', $total);
-        }
-        else {
-            // Increase the number of visits by 1
-            update_option('xtec-stats-visits', (int)$visits + 1);
+            if ($include_admin === false) {
+                add_option('xtec-stats-include-admin', 'on');
+            }
+        } else {
+            if (!$isadmin || ($isadmin && $include_admin == 'on')) {
+                // Increase the number of visits by 1
+                update_option('xtec-stats-visits', (int) $visits + 1);
+            }
         }
     }
 }
