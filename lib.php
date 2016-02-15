@@ -109,6 +109,10 @@ function save_stats() {
 
     if (isset($_SERVER['REQUEST_URI']) && !empty($_SERVER['REQUEST_URI'])) {
         $uri = filter_input(INPUT_SERVER, 'REQUEST_URI', FILTER_SANITIZE_STRING);
+        if (strrpos($uri, 'admin-ajax.php') && $_REQUEST['action']!=null) {
+            // Added action information to ajax callbacks
+            $uri .='?action='.$_REQUEST['action'];
+        }
     }
 
     $uid = $current_user->ID;
@@ -116,6 +120,51 @@ function save_stats() {
     $email = $current_user->user_email;
 
     $isadmin = current_user_can('manage_options');
+
+    $content = NULL;
+    // Save additional information in some cases
+    switch ($_REQUEST['action']) {
+        case 'delete_activity':
+        case 'delete_activity_comment':
+            // Deleting bp-activity
+            $result = array( 'id' => $_REQUEST['id']);
+            $query = "
+                    SELECT content FROM $table_prefix" . "bp_activity
+                    WHERE id='".$result['id']."'
+                    ";
+            $result['content'] = $wpdb->get_var($query);
+            $content = var_export($result, true);
+            break;
+
+        case 'bbp-edit-topic':
+            // Editing bp-forum topic
+            if (!$_REQUEST['bbp_log_topic_edit']) {
+                // Only save information on stats table if log button is disabled
+                $result = array( 'id' => $_REQUEST['bbp_topic_id']);
+                $query = "
+                        SELECT post_content, post_title FROM $table_prefix" . "posts
+                        WHERE id=".$result['id']."
+                        ";
+                $tmp_result = $wpdb->get_results($query);
+                $result['old_content'] = $tmp_result[0]->post_content;
+                $result['old_title'] = $tmp_result[0]->post_title;
+                $content = var_export($result, true);
+            }
+            break;
+        case 'bbp-edit-reply':
+            // Editing bp-forum reply
+            if (!$_REQUEST['bbp_log_reply_edit']) {
+                // Only save information on stats table if log button is disabled
+                $result = array( 'id' => $_REQUEST['bbp_reply_id']);
+                $query = "
+                        SELECT post_content FROM $table_prefix" . "posts
+                        WHERE id=".$result['id']."
+                        ";
+                $result['old_content'] = $wpdb->get_var($query);
+                $content = var_export($result, true);
+            }
+            break;
+    }
 
     $data = array(
         'datetime' => $datetime,
@@ -129,9 +178,14 @@ function save_stats() {
         'username' => $username,
         'email' => $email
     );
+    $fields = array('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s');
 
-    $wpdb->insert($table, $data, array('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s'));
-    
+    if (!is_null($content)) {
+        $data['content'] = $content;
+        $fields[] = '%s';
+    }
+    $wpdb->insert($table, $data, $fields);
+
     // Update number of visits in wp_options. Exclude cron and Heartbeat actions
     if ((strpos($uri, 'wp-cron') === false) && (strpos($uri, 'wp-admin') === false)) {
 
