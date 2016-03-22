@@ -7,11 +7,12 @@ class script_replace_url extends agora_script_base {
     public $title = 'Reemplaça la URL base d\'Àgora-Nodes';
     public $info = "
     <ul>
-    <li>add_ccentre és un booleà que defineix si a la origin_url se li afegeix el nom del centre al final. (útil quan es més d'un centre a l'hora)
-    <li>La URL ha d'acabar amb / al final
-    <li>La URL de destí sempre serà WP_SITEURL (del centre en particular)
-    <li>Si la URL o la BD són buides no farà el replace de URL o DB respectivament
-    <li>La BD de destí sempre serà DB_NAME
+    <li>add_ccentre és un booleà que defineix si a la origin_url se li afegeix el nom del centre al final. (Útil quan es més d'un centre alhora)</li>
+    <li>La URL ha d'acabar amb / al final</li>
+    <li>La URL de destí sempre serà WP_SITEURL (del centre en particular)</li>
+    <li>Si la URL o la BD són buides no farà el replace de URL o DB respectivament</li>
+    <li>La BD de destí sempre serà DB_NAME</li>
+    <li>origin_bd només s'ha d'especificar si canvia la base de dades (activedId)</li>
     </ul>
     Exemple:
     <ul><li>origin_url = ://agora/agora/
@@ -67,8 +68,6 @@ class script_replace_url extends agora_script_base {
             $replaceDB = false;
         }
 
-
-
         update_option('siteurl', WP_SITEURL);
         update_option('home', WP_SITEURL);
         update_option('wsl_settings_redirect_url', WP_SITEURL);
@@ -82,6 +81,13 @@ class script_replace_url extends agora_script_base {
                         'term_taxonomy' => array('description' => false),
                         'postmeta' => array('meta_value' => "meta_key = '_menu_item_url'")
                     );
+
+        // Email Subscribers
+        $table_name = $wpdb->prefix . 'es_pluginconfig';
+        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name) { // Check for table existence
+            $replace['es_pluginconfig'] = array('es_c_optinlink' => false, 'es_c_unsublink' => false);
+        }
+
         foreach ($replace as $tablename => $fields) {
             foreach ($fields as $fieldname => $and) {
                 if ($replaceURL) {
@@ -99,9 +105,10 @@ class script_replace_url extends agora_script_base {
         }
 
         if ($replaceDB) {
-            $replace = array('bp_activity' => array('content'),
-                            'posts' => array('post_content', 'guid')
-                        );
+            $replace = array(
+                'bp_activity' => array('content'),
+                'posts' => array('post_content', 'guid')
+                );
             foreach ($replace as $tablename => $fields) {
                 foreach ($fields as $fieldname) {
                     if (!$this->replace_sql($tablename, $fieldname, '/'.$replaceDB.'/', '/'.DB_NAME.'/')) {

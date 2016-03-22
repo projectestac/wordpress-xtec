@@ -35,8 +35,6 @@ class script_enable_service extends agora_script_base {
         $this->output("Set Blog name $clientName");
         update_option('blogname', $clientName);
         update_option('nodesbox_name', $clientName);
-        // Don't change default blog description
-        //update_option('blogdescription', 'Espai del centre ' . $clientName);
 
         $this->output('Set Admin mail');
         update_option('admin_email', $adminMail);
@@ -54,32 +52,58 @@ class script_enable_service extends agora_script_base {
         $value['nomCanonicCentre'] = $clientName;
         update_option('reactor_options', $value);
 
-        $this->output('Configure admin and xtecadmin users');
+        $this->output('Configuring admin and xtecadmin users');
         $user = get_user_by('login', 'admin');
         $user_id = wp_update_user(array(
             'ID' => $user->id,
             'user_email' => $adminMail,
             'user_registered' => time()
         ));
-        if ( is_wp_error( $user_id ) ) {
+        if (is_wp_error($user_id)) {
             $this->output('Error actualitzant usuari admin', 'ERROR');
             return false;
         }
-        $wpdb->update($wpdb->users, array('user_pass' => $params['password']), array('ID' => $user->id) );
+        $wpdb->update($wpdb->users, array('user_pass' => $params['password']), array('ID' => $user->id));
 
         $user = get_user_by('login', 'xtecadmin');
         $user_id = wp_update_user(array(
             'ID' => $user->id,
             'user_email' => $agora['xtecadmin']['mail']
         ));
-        if ( is_wp_error( $user_id ) ) {
+        if (is_wp_error($user_id)) {
             $this->output('Error actualitzant usuari xtecadmin', 'ERROR');
             return false;
         }
-        $wpdb->update($wpdb->users, array('user_pass' => $agora['xtecadmin']['password']), array('ID' => $user->id) );
+        $wpdb->update($wpdb->users, array('user_pass' => $agora['xtecadmin']['password']), array('ID' => $user->id));
+
+        // Email Subscribers
+        $table_name = $wpdb->prefix . 'es_pluginconfig';
+        $var = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name) { // Check for table existence
+            $this->output('Set admin e-mail in Email Subscribers');
+            $wpdb->update(
+                    $wpdb->prefix . 'es_pluginconfig', 
+                    array('es_c_fromemail' => $adminMail, 'es_c_adminemail' => $adminMail), 
+                    array('es_c_id' => 1)
+            );
+            $wpdb->update(
+                    $wpdb->prefix . 'es_emaillist', 
+                    array('es_email_mail' => $adminMail), 
+                    array('es_email_name' => 'Admin')
+            );
+
+            $this->output('Set blog name in Email Subscribers');
+            $blogname = get_option('blogname');
+            $fields_to_replace = array('es_c_adminmailsubject', 'es_c_adminmailcontant', 'es_c_usermailsubject', 'es_c_usermailcontant', 'es_c_optinsubject', 'es_c_optincontent');
+            foreach ($fields_to_replace as $field) {
+                if (!$this->replace_sql('es_pluginconfig', $field, 'Màster Serveis Educatius', $blogname)) {
+                    return false;
+                }
+            }
+        }
 
         $this->output('Reset stats table');
-        if (!$this->execute_sql('TRUNCATE '.$wpdb->prefix.'stats')) {
+        if (!$this->execute_sql('TRUNCATE ' . $wpdb->prefix . 'stats')) {
             $this->output('Error buidant la taula stats', 'ERROR');
             return false;
         }
@@ -108,4 +132,23 @@ class script_enable_service extends agora_script_base {
         $wpdb->show_errors();
         return true;
     }
+
+    private function replace_sql($table, $field, $search, $replace) {
+        global $wpdb;
+
+        if (empty($search) || empty($replace)) {
+            return true;
+        }
+
+        $tablename = $wpdb->prefix . $table;
+        $sql = "UPDATE $tablename SET `$field` = REPLACE (`$field` , '$search', '$replace')
+                WHERE `$field` like '%$search%'";
+
+        if (!$this->execute_sql($sql)) {
+            return false;
+        }
+
+        return true;
+    }
+
 }
