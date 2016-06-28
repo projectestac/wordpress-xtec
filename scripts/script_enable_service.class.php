@@ -9,14 +9,13 @@ class script_enable_service extends agora_script_base {
 
     public function params() {
         $params = array();
-        $params['password'] = ""; //Admin password en md5
+        $params['password'] = ""; // Admin password in md5
         $params['clientName'] = "";
         $params['clientAddress'] = "";
         $params['clientCity'] = "";
         $params['clientPC'] = ""; // Postal Code
         $params['clientDNS'] = ""; // Not used
         $params['clientCode'] = "";
-
         $params['origin_url'] = "";
         $params['origin_bd'] = "";
 
@@ -32,14 +31,14 @@ class script_enable_service extends agora_script_base {
         $clientPCCity = $params['clientPC'] . ' ' . $params['clientCity']; // Post Code and City
         $adminMail = $params['clientCode'] . '@xtec.cat';
 
-        $this->output("Set Blog name $clientName");
+        $this->output("Set Blog name to $clientName");
         update_option('blogname', $clientName);
         update_option('nodesbox_name', $clientName);
 
-        $this->output('Set Admin mail');
+        $this->output("Set Admin mail to $adminMail");
         update_option('admin_email', $adminMail);
 
-        $this->output("Set Site URL");
+        $this->output("Set Site URL to " . WP_SITEURL);
         update_option('siteurl', WP_SITEURL);
         update_option('home', WP_SITEURL);
         update_option('wsl_settings_redirect_url', WP_SITEURL);
@@ -77,30 +76,9 @@ class script_enable_service extends agora_script_base {
         $wpdb->update($wpdb->users, array('user_pass' => $agora['xtecadmin']['password']), array('ID' => $user->id));
 
         // Email Subscribers
-        $table_name = $wpdb->prefix . 'es_pluginconfig';
-        $var = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name) { // Check for table existence
-            $this->output('Set admin e-mail in Email Subscribers');
-            $wpdb->update(
-                    $wpdb->prefix . 'es_pluginconfig', 
-                    array('es_c_fromemail' => $adminMail, 'es_c_adminemail' => $adminMail), 
-                    array('es_c_id' => 1)
-            );
-            $wpdb->update(
-                    $wpdb->prefix . 'es_emaillist', 
-                    array('es_email_mail' => $adminMail), 
-                    array('es_email_name' => 'Admin')
-            );
-
-            $this->output('Set blog name in Email Subscribers');
-            $blogname = get_option('blogname');
-            $fields_to_replace = array('es_c_adminmailsubject', 'es_c_adminmailcontant', 'es_c_usermailsubject', 'es_c_usermailcontant', 'es_c_optinsubject', 'es_c_optincontent');
-            foreach ($fields_to_replace as $field) {
-                if (!$this->replace_sql('es_pluginconfig', $field, 'Màster Serveis Educatius', $blogname)) {
-                    return false;
-                }
-            }
-        }
+        $this->execute_suboperation('replace_email_subscribers', array(
+            'adminMail' => $adminMail
+        ));
 
         $this->output('Reset stats table');
         if (!$this->execute_sql('TRUNCATE ' . $wpdb->prefix . 'stats')) {
