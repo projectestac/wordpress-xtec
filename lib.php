@@ -88,7 +88,7 @@ function save_stats() {
     date_default_timezone_set('Europe/Madrid');
     $datetime = date('Y-m-d H:i:s', time());
 
-    $ip = $ipForward = $ipClient = $userAgent = '';
+    $ip = $ipForward = $ipClient = $userAgent = $uri = '';
 
     // Usage of filter_input() guarantees that info is clean
     if (isset($_SERVER['REMOTE_ADDR']) && !empty($_SERVER['REMOTE_ADDR'])) {
