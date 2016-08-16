@@ -48,7 +48,8 @@ class script_replace_email_subscribers extends agora_script_base
                 'es_c_usermailsubject',
                 'es_c_usermailcontant',
                 'es_c_optinsubject',
-                'es_c_optincontent'
+                'es_c_optincontent',
+                'es_c_unsubtext'
             );
             foreach ($fields_to_replace as $field) {
                 if (!$this->replace_sql('es_pluginconfig', $field, $common_beginning, $blogname)) {
