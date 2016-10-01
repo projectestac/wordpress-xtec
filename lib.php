@@ -80,139 +80,145 @@ function get_xtecadmin_username() {
  */
 function save_stats() {
 
-    global $current_user, $table_prefix, $wpdb;
+    // Filter boots access: Baidu, Google, Yahoo, bingbot, YandexBot, Grapeshot, Dotbot, Gecko/20100101 Firefox/6.0.2
+    $pattern = '/(Baidu|Google|Yahoo|bingbot|YandexBot|GrapeshotCrawler|DotBot|Gecko\/20100101 Firefox\/6.0.2)/';
 
-    $table = $table_prefix . 'stats';
+    if ( preg_match( $pattern, $_SERVER['HTTP_USER_AGENT'] ) == 0 ){
 
-    // time() return time referred to GMT. Changing the time zone fixes this.
-    date_default_timezone_set('Europe/Madrid');
-    $datetime = date('Y-m-d H:i:s', time());
+        global $current_user, $table_prefix, $wpdb;
 
-    $ip = $ipForward = $ipClient = $userAgent = $uri = '';
+        $table = $table_prefix . 'stats';
 
-    // Usage of filter_input() guarantees that info is clean
-    if (isset($_SERVER['REMOTE_ADDR']) && !empty($_SERVER['REMOTE_ADDR'])) {
-        $ip = filter_input(INPUT_SERVER, 'REMOTE_ADDR', FILTER_SANITIZE_STRING);
-    }
+        // time() return time referred to GMT. Changing the time zone fixes this.
+        date_default_timezone_set('Europe/Madrid');
+        $datetime = date('Y-m-d H:i:s', time());
 
-    if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        $ipForward = filter_input(INPUT_SERVER, 'HTTP_X_FORWARDED_FOR', FILTER_SANITIZE_STRING);
-    }
+        $ip = $ipForward = $ipClient = $userAgent = $uri = '';
 
-    if (isset($_SERVER['HTTP_CLIENT_IP']) && !empty($_SERVER['HTTP_CLIENT_IP'])) {
-        $ipClient = filter_input(INPUT_SERVER, 'HTTP_CLIENT_IP', FILTER_SANITIZE_STRING);
-    }
-
-    if (isset($_SERVER['HTTP_USER_AGENT']) && !empty($_SERVER['HTTP_USER_AGENT'])) {
-        $userAgent = filter_input(INPUT_SERVER, 'HTTP_USER_AGENT', FILTER_SANITIZE_STRING);
-    }
-
-    if (isset($_SERVER['REQUEST_URI']) && !empty($_SERVER['REQUEST_URI'])) {
-        $uri = filter_input(INPUT_SERVER, 'REQUEST_URI', FILTER_SANITIZE_STRING);
-        if (strrpos($uri, 'admin-ajax.php') && $_REQUEST['action']!=null) {
-            // Added action information to ajax callbacks
-            $uri .='?action='.$_REQUEST['action'];
+        // Usage of filter_input() guarantees that info is clean
+        if (isset($_SERVER['REMOTE_ADDR']) && !empty($_SERVER['REMOTE_ADDR'])) {
+            $ip = filter_input(INPUT_SERVER, 'REMOTE_ADDR', FILTER_SANITIZE_STRING);
         }
-    }
 
-    $uid = $current_user->ID;
-    $username = $current_user->user_login;
-    $email = $current_user->user_email;
+        if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $ipForward = filter_input(INPUT_SERVER, 'HTTP_X_FORWARDED_FOR', FILTER_SANITIZE_STRING);
+        }
 
-    $isadmin = current_user_can('manage_options');
+        if (isset($_SERVER['HTTP_CLIENT_IP']) && !empty($_SERVER['HTTP_CLIENT_IP'])) {
+            $ipClient = filter_input(INPUT_SERVER, 'HTTP_CLIENT_IP', FILTER_SANITIZE_STRING);
+        }
 
-    $content = NULL;
-    // Save additional information in some cases
-    switch ($_REQUEST['action']) {
-        case 'delete_activity':
-        case 'delete_activity_comment':
-            // Deleting bp-activity
-            $result = array( 'id' => $_REQUEST['id']);
-            $query = "
-                    SELECT content FROM $table_prefix" . "bp_activity
-                    WHERE id='".$result['id']."'
+        if (isset($_SERVER['HTTP_USER_AGENT']) && !empty($_SERVER['HTTP_USER_AGENT'])) {
+            $userAgent = filter_input(INPUT_SERVER, 'HTTP_USER_AGENT', FILTER_SANITIZE_STRING);
+        }
+
+        if (isset($_SERVER['REQUEST_URI']) && !empty($_SERVER['REQUEST_URI'])) {
+            $uri = filter_input(INPUT_SERVER, 'REQUEST_URI', FILTER_SANITIZE_STRING);
+            if (strrpos($uri, 'admin-ajax.php') && $_REQUEST['action']!=null) {
+                // Added action information to ajax callbacks
+                $uri .='?action='.$_REQUEST['action'];
+            }
+        }
+
+        $uid = $current_user->ID;
+        $username = $current_user->user_login;
+        $email = $current_user->user_email;
+
+        $isadmin = current_user_can('manage_options');
+
+        $content = NULL;
+        // Save additional information in some cases
+        switch ($_REQUEST['action']) {
+            case 'delete_activity':
+            case 'delete_activity_comment':
+                // Deleting bp-activity
+                $result = array( 'id' => $_REQUEST['id']);
+                $query = "
+                        SELECT content FROM $table_prefix" . "bp_activity
+                        WHERE id='".$result['id']."'
+                        ";
+                $result['content'] = $wpdb->get_var($query);
+                $content = var_export($result, true);
+                break;
+
+            case 'bbp-edit-topic':
+                // Editing bp-forum topic
+                if (!$_REQUEST['bbp_log_topic_edit']) {
+                    // Only save information on stats table if log button is disabled
+                    $result = array( 'id' => $_REQUEST['bbp_topic_id']);
+                    $query = "
+                            SELECT post_content, post_title FROM $table_prefix" . "posts
+                            WHERE id=".$result['id']."
+                            ";
+                    $tmp_result = $wpdb->get_results($query);
+                    $result['old_content'] = $tmp_result[0]->post_content;
+                    $result['old_title'] = $tmp_result[0]->post_title;
+                    $content = var_export($result, true);
+                }
+                break;
+            case 'bbp-edit-reply':
+                // Editing bp-forum reply
+                if (!$_REQUEST['bbp_log_reply_edit']) {
+                    // Only save information on stats table if log button is disabled
+                    $result = array( 'id' => $_REQUEST['bbp_reply_id']);
+                    $query = "
+                            SELECT post_content FROM $table_prefix" . "posts
+                            WHERE id=".$result['id']."
+                            ";
+                    $result['old_content'] = $wpdb->get_var($query);
+                    $content = var_export($result, true);
+                }
+                break;
+        }
+
+        $data = array(
+            'datetime' => $datetime,
+            'ip' => $ip,
+            'ipForward' => $ipForward,
+            'ipClient' => $ipClient,
+            'userAgent' => $userAgent,
+            'uri' => $uri,
+            'uid' => $uid,
+            'isadmin' => $isadmin,
+            'username' => $username,
+            'email' => $email
+        );
+        $fields = array('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s');
+
+        if (!is_null($content)) {
+            $data['content'] = $content;
+            $fields[] = '%s';
+        }
+        $wpdb->insert($table, $data, $fields);
+
+        // Update number of visits in wp_options. Exclude cron and Heartbeat actions
+        if ((strpos($uri, 'wp-cron') === false) && (strpos($uri, 'wp-admin') === false)) {
+
+            $visits = get_option('xtec-stats-visits');
+            $include_admin = get_option('xtec-stats-include-admin');
+
+            // If option is not set yet, creates it and set initial value
+            if ($visits === false) {
+                // Get initial value
+                global $wpdb;
+                $query = "
+                    SELECT count(*) AS Total FROM $table_prefix" . "stats
+                    WHERE uri NOT LIKE('%wp-cron%')
+                    AND uri NOT LIKE('%wp-admin%')
                     ";
-            $result['content'] = $wpdb->get_var($query);
-            $content = var_export($result, true);
-            break;
+                $result = $wpdb->get_results($query);
+                $total = $result[0]->Total;
 
-        case 'bbp-edit-topic':
-            // Editing bp-forum topic
-            if (!$_REQUEST['bbp_log_topic_edit']) {
-                // Only save information on stats table if log button is disabled
-                $result = array( 'id' => $_REQUEST['bbp_topic_id']);
-                $query = "
-                        SELECT post_content, post_title FROM $table_prefix" . "posts
-                        WHERE id=".$result['id']."
-                        ";
-                $tmp_result = $wpdb->get_results($query);
-                $result['old_content'] = $tmp_result[0]->post_content;
-                $result['old_title'] = $tmp_result[0]->post_title;
-                $content = var_export($result, true);
-            }
-            break;
-        case 'bbp-edit-reply':
-            // Editing bp-forum reply
-            if (!$_REQUEST['bbp_log_reply_edit']) {
-                // Only save information on stats table if log button is disabled
-                $result = array( 'id' => $_REQUEST['bbp_reply_id']);
-                $query = "
-                        SELECT post_content FROM $table_prefix" . "posts
-                        WHERE id=".$result['id']."
-                        ";
-                $result['old_content'] = $wpdb->get_var($query);
-                $content = var_export($result, true);
-            }
-            break;
-    }
-
-    $data = array(
-        'datetime' => $datetime,
-        'ip' => $ip,
-        'ipForward' => $ipForward,
-        'ipClient' => $ipClient,
-        'userAgent' => $userAgent,
-        'uri' => $uri,
-        'uid' => $uid,
-        'isadmin' => $isadmin,
-        'username' => $username,
-        'email' => $email
-    );
-    $fields = array('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s');
-
-    if (!is_null($content)) {
-        $data['content'] = $content;
-        $fields[] = '%s';
-    }
-    $wpdb->insert($table, $data, $fields);
-
-    // Update number of visits in wp_options. Exclude cron and Heartbeat actions
-    if ((strpos($uri, 'wp-cron') === false) && (strpos($uri, 'wp-admin') === false)) {
-
-        $visits = get_option('xtec-stats-visits');
-        $include_admin = get_option('xtec-stats-include-admin');
-
-        // If option is not set yet, creates it and set initial value
-        if ($visits === false) {
-            // Get initial value
-            global $wpdb;
-            $query = "
-                SELECT count(*) AS Total FROM $table_prefix" . "stats
-				WHERE uri NOT LIKE('%wp-cron%')
-				AND uri NOT LIKE('%wp-admin%')
-                ";
-            $result = $wpdb->get_results($query);
-            $total = $result[0]->Total;
-
-            // Add options to table
-            add_option('xtec-stats-visits', $total);
-            if ($include_admin === false) {
-                add_option('xtec-stats-include-admin', 'on');
-            }
-        } else {
-            if (!$isadmin || ($isadmin && $include_admin == 'on')) {
-                // Increase the number of visits by 1
-                update_option('xtec-stats-visits', (int) $visits + 1);
+                // Add options to table
+                add_option('xtec-stats-visits', $total);
+                if ($include_admin === false) {
+                    add_option('xtec-stats-include-admin', 'on');
+                }
+            } else {
+                if (!$isadmin || ($isadmin && $include_admin == 'on')) {
+                    // Increase the number of visits by 1
+                    update_option('xtec-stats-visits', (int) $visits + 1);
+                }
             }
         }
     }
@@ -225,10 +231,10 @@ function save_stats() {
  * @author Toni Ginard, Nacho Abejaro
  */
 function remove_old_stats() {
-	global $wpdb;
+    global $wpdb;
 
-	$time = strtotime("-1 year", time());
-	$datetime = date('Y-m-d H:i:s', $time);
+    $time = strtotime("-1 year", time());
+    $datetime = date('Y-m-d H:i:s', $time);
 
     $table = $wpdb->prefix . 'stats';
     $wpdb->query( "DELETE FROM `$table` WHERE datetime < '$datetime' ");
