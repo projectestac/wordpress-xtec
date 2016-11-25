@@ -122,8 +122,9 @@ function save_stats() {
     $isadmin = current_user_can('manage_options');
 
     $content = NULL;
+    $action = array_key_exists('action', $_REQUEST)?$_REQUEST['action']:'';
     // Save additional information in some cases
-    switch ($_REQUEST['action']) {
+    switch ($action) {
         case 'delete_activity':
         case 'delete_activity_comment':
             // Deleting bp-activity
