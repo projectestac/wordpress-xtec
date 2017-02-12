@@ -220,19 +220,36 @@ function save_stats() {
 }
 
 /**
- * This action is called from agora-functions.php
- * Remove all wp-stats content from one year ago
- * @global type $wpdb
- * @author Toni Ginard, Nacho Abejaro
+ * This action is called from the WordPress cron (it's supposed to be programmed). Remove all wp_stats content
+ *  older that one year and the visits of the search robots older than two months.
+ *
+ * @global object $wpdb
+ * @author Toni Ginard
  */
 function remove_old_stats() {
-	global $wpdb;
+    global $wpdb;
 
-	$time = strtotime("-1 year", time());
-	$datetime = date('Y-m-d H:i:s', $time);
+    $time = strtotime("-1 year", time());
+    $datetime = date('Y-m-d H:i:s', $time);
 
     $table = $wpdb->prefix . 'stats';
     $wpdb->query( "DELETE FROM `$table` WHERE datetime < '$datetime' ");
+
+    $time = strtotime("-2 month", time());
+    $datetime = date('Y-m-d H:i:s', $time);
+    $search_bots = array (
+        'Baidu',
+        'Googlebot',
+        'Yahoo',
+        'bingbot',
+        'YandexBot',
+        'GrapeshotCrawler',
+        'DotBot',
+        'Gecko/20100101 Firefox/6.0.2'
+    );
+    $where = "WHERE datetime < '$datetime' AND (`userAgent` like '%" . implode( '%\' or `userAgent` like \'%', $search_bots ) . "%')";
+
+    $wpdb->query( "DELETE FROM `$table` $where");
 }
 
 function parse_cli_args() {
