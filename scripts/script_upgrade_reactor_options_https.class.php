@@ -15,7 +15,7 @@ class script_upgrade_reactor_options_https extends agora_script_base {
 
         $options = (get_option('reactor_options')) ? get_option('reactor_options') : null;
         foreach ($options as $key => $value) {
-            if (($key == 'logo_image') || ($key == 'contacteCentre')) {
+            if ( ($key == 'logo_image') || ($key == 'contacteCentre') || ($key == 'favicon_image') ) {
                 if (substr($value, 0, 7) === "http://") {
                     $value         = preg_replace("/^http:/i", "https:", $value);
                     $options[$key] = $value;
