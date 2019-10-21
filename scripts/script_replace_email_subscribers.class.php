@@ -49,11 +49,32 @@ class script_replace_email_subscribers extends agora_script_base
         }
     }
     
+    private function checkCronURL()
+    {
+        global $wpdb;
+
+        $cronurl = $wpdb->get_var("SELECT `option_value` FROM wp_options WHERE `option_name` ='ig_es_cronurl'");
+        $siteurl = $wpdb->get_var("SELECT `option_value` FROM wp_options WHERE `option_name` ='siteurl'");
+
+        $originalUrl = basename($siteurl);
+        $oldUrl = array_slice(explode('/', rtrim($cronurl, '/')), -2)[0];
+
+        if ($originalUrl != $oldUrl ) {
+            $newCronUrl = str_replace($oldUrl, $originalUrl, $cronurl);
+
+            if (!$this->replace_sql('options', 'option_value', $cronurl, $newCronUrl)) {
+                $this->output('Error replacing cron value');
+                return false;
+            }
+        }
+    }
+
     protected function _execute($params = array())
     {
         global $wpdb;
         
         $this->replace_wp_options_email_subscribers();
+        $this->checkCronURL();
         
         $adminMail = (isset($params['adminMail'])) ? $params['adminMail'] : '';
         $table_name = $wpdb->prefix . 'es_pluginconfig';
