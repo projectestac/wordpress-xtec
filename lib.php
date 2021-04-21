@@ -75,8 +75,10 @@ function get_xtecadmin_username() {
     return 'xtecadmin';
 }
 
-/*
+/**
  * Collect basic statistical and security information.
+ *
+ * @throws Exception
  */
 function save_stats() {
 
@@ -84,9 +86,10 @@ function save_stats() {
 
     $table = $table_prefix . 'stats';
 
-    // time() return time referred to GMT. Changing the time zone fixes this.
-    date_default_timezone_set('Europe/Madrid');
-    $datetime = date('Y-m-d H:i:s', time());
+    // Get the local timestamp
+    $dt = new DateTime('now', new DateTimeZone(get_option('timezone_string')));
+    $dt->setTimestamp(time());
+    $datetime = $dt->format('Y-m-d H:i:s');
 
     $ip = $ipForward = $ipClient = $userAgent = $uri = '';
 
