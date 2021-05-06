@@ -9,15 +9,16 @@ class script_enable_service extends agora_script_base {
 
     public function params() {
         $params = array();
-        $params['password'] = ""; // Admin password in md5
-        $params['clientName'] = "";
-        $params['clientAddress'] = "";
-        $params['clientCity'] = "";
-        $params['clientPC'] = ""; // Postal Code
-        $params['clientDNS'] = ""; // Not used
-        $params['clientCode'] = "";
-        $params['origin_url'] = "";
-        $params['origin_bd'] = "";
+        $params['password'] = ''; // admin password in md5
+        $params['xtecadminPassword'] = ''; // xtecadmin password in md5
+        $params['clientName'] = '';
+        $params['clientAddress'] = '';
+        $params['clientCity'] = '';
+        $params['clientPC'] = ''; // Postal Code
+        $params['clientDNS'] = ''; // Not used
+        $params['clientCode'] = '';
+        $params['origin_url'] = '';
+        $params['origin_bd'] = '';
 
         return $params;
     }
@@ -73,7 +74,7 @@ class script_enable_service extends agora_script_base {
             $this->output('Error actualitzant usuari xtecadmin', 'ERROR');
             return false;
         }
-        $wpdb->update($wpdb->users, array('user_pass' => $agora['xtecadmin']['password']), array('ID' => $user->id));
+        $wpdb->update($wpdb->users, array('user_pass' => $params['xtecadminPassword']), array('ID' => $user->id));
 
         // Email Subscribers
         $this->execute_suboperation('replace_email_subscribers', array(
