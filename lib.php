@@ -87,7 +87,7 @@ function save_stats() {
     $table = $table_prefix . 'stats';
 
     // Get the local timestamp
-    $dt = new DateTime('now', new DateTimeZone(get_option('timezone_string')));
+    $dt = new DateTime('now', new DateTimeZone(wp_timezone_string()));
     $dt->setTimestamp(time());
     $datetime = $dt->format('Y-m-d H:i:s');
 
