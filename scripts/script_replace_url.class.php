@@ -36,7 +36,8 @@ class script_replace_url extends agora_script_base {
             $params['origin_url'] = str_replace('http://', '://', $params['origin_url']);
             $params['origin_url'] = str_replace('https://', '://', $params['origin_url']);
             $replaceURL = trim($params['origin_url']);
-            if ($params['add_ccentre']) {
+            // When called from CLI, $params['add_ccentre'] is not defined.
+            if (isset($params['add_ccentre']) && $params['add_ccentre']) {
                 $replaceURL .= CENTRE.'/';
             }
             $this->output("URL origen: ".$replaceURL);
