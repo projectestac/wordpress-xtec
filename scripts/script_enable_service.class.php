@@ -54,27 +54,27 @@ class script_enable_service extends agora_script_base {
 
         $this->output('Configuring admin and xtecadmin users');
         $user = get_user_by('login', 'admin');
-        $user_id = wp_update_user(array(
-            'ID' => $user->id,
+        $user_id = wp_update_user([
+            'ID' => $user->ID,
             'user_email' => $adminMail,
             'user_registered' => time()
-        ));
+        ]);
         if (is_wp_error($user_id)) {
             $this->output('Error actualitzant usuari admin', 'ERROR');
             return false;
         }
-        $wpdb->update($wpdb->users, array('user_pass' => $params['password']), array('ID' => $user->id));
+        $wpdb->update($wpdb->users, array('user_pass' => $params['password']), ['ID' => $user->ID]);
 
         $user = get_user_by('login', 'xtecadmin');
-        $user_id = wp_update_user(array(
-            'ID' => $user->id,
+        $user_id = wp_update_user([
+            'ID' => $user->ID,
             'user_email' => $agora['xtecadmin']['mail']
-        ));
+        ]);
         if (is_wp_error($user_id)) {
             $this->output('Error actualitzant usuari xtecadmin', 'ERROR');
             return false;
         }
-        $wpdb->update($wpdb->users, array('user_pass' => $params['xtecadminPassword']), array('ID' => $user->id));
+        $wpdb->update($wpdb->users, array('user_pass' => $params['xtecadminPassword']), ['ID' => $user->ID]);
 
         // Email Subscribers
         $this->execute_suboperation('replace_email_subscribers', array(
