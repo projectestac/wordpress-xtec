@@ -4,10 +4,10 @@ require_once('agora_script_base.class.php');
 
 class script_delete_duplicated_email_subscribers extends agora_script_base {
 
-    public $title = "Elimina duplicats al mòdul email subscribers";
-    public $info = "Afegeix un cron al WordPress que s'executa diàriament i esborra els registres duplicats del mòdul email subscribers";
+    public string $title = "Elimina duplicats al mòdul email subscribers";
+    public string $info = "Afegeix un cron al WordPress que s'executa diàriament i esborra els registres duplicats del mòdul email subscribers";
 
-    protected function _execute($params = array()) {
+    protected function _execute($params = array()): bool {
 
         $this->checktable_mailing_queue('ig_mailing_queue');
         $this->checktable_sending_queue('ig_sending_queue');

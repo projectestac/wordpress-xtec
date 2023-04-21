@@ -4,15 +4,10 @@ require_once('agora_script_base.class.php');
 
 class script_update_reactor_options extends agora_script_base {
 
-    public $title = 'Canvia la variable "emailCentre" per "contacteCentre" i en comprova el contingut';
-    public $info = 'Canvia el nom de la variable "emailCentre" del tema Reactor per "contacteCentre" i en comprova el contingut. Si es tracta d\'una adreça de correu electrònic la posa a la variable "correuCentre" i deixa el "contacteCentre" buit.';
+    public string $title = 'Canvia la variable "emailCentre" per "contacteCentre" i en comprova el contingut';
+    public string $info = 'Canvia el nom de la variable "emailCentre" del tema Reactor per "contacteCentre" i en comprova el contingut. Si es tracta d\'una adreça de correu electrònic la posa a la variable "correuCentre" i deixa el "contacteCentre" buit.';
 
-    public function params() {
-        $params = array();
-        return $params;
-    }
-
-    protected function _execute($params = array()) {
+    protected function _execute($params = array()): bool {
 
         $options_reactor = get_option('reactor_options');
 

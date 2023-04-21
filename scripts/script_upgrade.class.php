@@ -4,12 +4,12 @@ require_once 'agora_script_base.class.php';
 
 class script_upgrade extends agora_script_base {
 
-    public $title = 'Actualitza els espais d\'Àgora-Nodes';
-    public $info = 'Crida l\'script wp-admin/upgrade.php de cada espai per dur a terme l\'actualització estàndard del WordPress';
+    public string $title = 'Actualitza els espais d\'Àgora-Nodes';
+    public string $info = 'Crida l\'script wp-admin/upgrade.php de cada espai per dur a terme l\'actualització estàndard del WordPress';
 
     protected function _execute($params = []): bool {
 
-        global $wp_db_version, $wpdb;
+        global $wp_db_version;
 
         $this->output('Versió de la base dades: ' . get_option('db_version'));
         $this->output('Versió dels fitxers: ' . $wp_db_version );
@@ -20,8 +20,7 @@ class script_upgrade extends agora_script_base {
             // Update WordPress and send all output to a buffer
             ob_start();
             require_once ABSPATH . 'wp-admin/upgrade.php';
-            $output = ob_get_contents();
-            ob_end_clean(); // Clear the buffer
+            $output = ob_get_clean();
 
             // Process the HTML code to extract the content of header h1
             $DOM = new DOMDocument;

@@ -4,11 +4,11 @@ require_once('agora_script_base.class.php');
 
 class script_enable_service extends agora_script_base {
 
-    public $title = 'Activa el servei Àgora-Nodes';
-    public $info = "Fa els passos necessàris per activar Wordpress i deixar-lo a punt per començar";
+    public string $title = 'Activa el servei Àgora-Nodes';
+    public string $info = "Fa els passos necessaris per activar Wordpress i deixar-lo a punt per començar";
 
-    public function params() {
-        $params = array();
+    public function params(): array {
+        $params = [];
         $params['password'] = ''; // admin password in md5
         $params['xtecadminPassword'] = ''; // xtecadmin password in md5
         $params['clientName'] = '';
@@ -23,7 +23,7 @@ class script_enable_service extends agora_script_base {
         return $params;
     }
 
-    protected function _execute($params = array()) {
+    protected function _execute($params = []): bool {
         global $agora, $wpdb;
 
         // Get the params
@@ -49,32 +49,42 @@ class script_enable_service extends agora_script_base {
         $value['nomCanonicCentre'] = $clientName;
         $value['direccioCentre'] = $clientAddress;
         $value['cpCentre'] = $clientPCCity;
-        $value['nomCanonicCentre'] = $clientName;
         update_option('reactor_options', $value);
 
         $this->output('Configuring admin and xtecadmin users');
-        $user = get_user_by('login', 'admin');
-        $user_id = wp_update_user([
-            'ID' => $user->ID,
-            'user_email' => $adminMail,
-            'user_registered' => time()
-        ]);
+        $user_id = get_user_by('login', 'admin')->ID;
         if (is_wp_error($user_id)) {
             $this->output('Error actualitzant usuari admin', 'ERROR');
             return false;
         }
-        $wpdb->update($wpdb->users, array('user_pass' => $params['password']), ['ID' => $user->ID]);
+        $wpdb->update(
+            $wpdb->users,
+            [
+                'user_pass' => $params['password'],
+                'user_email' => $adminMail,
+                'user_registered' => time(),
+                'user_activation_key' => '',
+           ],
+            ['ID' => $user_id]
+        );
+        clean_user_cache($user_id);
 
-        $user = get_user_by('login', 'xtecadmin');
-        $user_id = wp_update_user([
-            'ID' => $user->ID,
-            'user_email' => $agora['xtecadmin']['mail']
-        ]);
+        $user_id = get_user_by('login', 'xtecadmin')->ID;
         if (is_wp_error($user_id)) {
             $this->output('Error actualitzant usuari xtecadmin', 'ERROR');
             return false;
         }
-        $wpdb->update($wpdb->users, array('user_pass' => $params['xtecadminPassword']), ['ID' => $user->ID]);
+        $wpdb->update(
+            $wpdb->users,
+            [
+                'user_pass' => $params['xtecadminPassword'],
+                'user_email' => $agora['xtecadmin']['mail'],
+                'user_registered' => time(),
+                'user_activation_key' => '',
+            ],
+            ['ID' => $user_id]
+        );
+        clean_user_cache($user_id);
 
         // Email Subscribers
         $this->execute_suboperation('replace_email_subscribers', array(
@@ -101,18 +111,21 @@ class script_enable_service extends agora_script_base {
         return $this->execute_suboperation('upgrade');
     }
 
-    private function execute_sql($sql) {
+    private function execute_sql($sql): bool {
         global $wpdb;
+
         $wpdb->hide_errors();
+
         if (is_wp_error($wpdb->query($sql))) {
             $wpdb->print_error();
             return false;
         }
+
         $wpdb->show_errors();
         return true;
     }
 
-    private function replace_sql($table, $field, $search, $replace) {
+    private function replace_sql($table, $field, $search, $replace): bool {
         global $wpdb;
 
         if (empty($search) || empty($replace)) {

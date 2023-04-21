@@ -4,14 +4,10 @@ require_once('agora_script_base.class.php');
 
 class script_upgrade_bpges_39 extends agora_script_base {
 
-    public $title = 'Actualitza el BPGES a la versió 3.9';
-    public $info = 'Actualitza l\'extensió Buddypress Group Email Subscription a la versió 3.9';
+    public string $title = 'Actualitza el BPGES a la versió 3.9';
+    public string $info = 'Actualitza l\'extensió Buddypress Group Email Subscription a la versió 3.9';
 
-    public function params() {
-        return [];
-    }
-
-    protected function _execute($params = []) {
+    protected function _execute($params = []): bool {
 
         require_once ABSPATH . 'wp-content/plugins/buddypress-group-email-subscription/admin.php';
 

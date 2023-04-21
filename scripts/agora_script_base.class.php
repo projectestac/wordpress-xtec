@@ -1,89 +1,83 @@
 <?php
 
-class agora_script_base{
+class agora_script_base {
 
-	public $title = 'No title';
-	public $info = "";
+    public string $title = 'No title';
+    public string $info = '';
 
-	public function params() {
-		$params = array();
-		return $params;
-	}
+    public function params(): array {
+        return [];
+    }
 
-	function execute($params = false) {
-		if ($this->can_be_executed()) {
-			$starttime = microtime();
+    public function execute($params = []): bool {
+        if ($this->can_be_executed()) {
+            $starttime = microtime(true);
 
-			echo $this->title."\n";
+            echo $this->title . "\n";
 
-            if (!$params) {
+            if (empty($params)) {
                 $params = $this->get_request_params();
             }
 
             try {
-				$return = $this->_execute($params);
-			} catch (Exception $e) {
-				echo $e->getMessage();
-			}
+                $return = $this->_execute($params);
+            } catch (Exception $e) {
+                echo $e->getMessage();
+            }
 
-			$difftime = self::microtime_diff($starttime, microtime());
+            $difftime = microtime(true) - $starttime;
+            echo "\n" . "Execution took " . $difftime . " seconds\n";
 
-			echo "\n"."Execution took ".$difftime." seconds\n";
+            return $return ?? false;
+        }
 
-			return $return;
-		}
-		return false;
-	}
+        return false;
+    }
 
-	private function get_request_params(){
-		$params = $this->params();
-		foreach ($params as $paramname => $unused) {
-			if ($value = get_cli_arg($paramname)) {
-				$params[$paramname] = $value;
-			}
-		}
-		return $params;
-	}
+    private function get_request_params(): array {
+        $params = $this->params();
+        foreach ($params as $paramname => $unused) {
+            if ($value = get_cli_arg($paramname)) {
+                $params[$paramname] = $value;
+            }
+        }
+        return $params;
+    }
 
-	private static function microtime_diff($a, $b) {
-	    list($adec, $asec) = explode(' ', $a);
-	    list($bdec, $bsec) = explode(' ', $b);
-	    return $bsec - $asec + $bdec - $adec;
-	}
+    protected function _execute($params = []): bool {
+        return false;
+    }
 
+    protected function can_be_executed($params = []): bool {
+        return true;
+    }
 
-	protected function _execute($params = array()) {
-		return false;
-	}
-
-	protected function can_be_executed($params = array()) {
-		return true;
-	}
-
-	protected function output($message, $type = "") {
+    protected function output($message, $type = ''): void {
         if (is_object($message) || is_array($message)) {
             print_r($message);
             return;
         }
 
         if (!empty($type)) {
-            $message = $type.': '.$message;
+            $message = $type . ': ' . $message;
         }
-        echo $message."\n";
-        return;
+
+        echo $message . "\n";
     }
 
-    protected function execute_suboperation($function, $params = array()) {
-        $function = 'script_'.$function;
-        $filename = $function.'.class.php';
-        $basedir = dirname(__FILE__).'/';
-        if (!file_exists($basedir.$filename)) {
+    protected function execute_suboperation($function, $params = []): bool {
+        $function = 'script_' . $function;
+        $filename = $function . '.class.php';
+        $basedir = __DIR__ . '/';
+
+        if (!file_exists($basedir . $filename)) {
             $this->output("File $basedir $filename does not exists", 'ERROR');
             return false;
         }
+
         require_once($filename);
-        $script = new $function();
-        return $script->execute($params);
+
+        return (new $function())->execute($params);
     }
 
 }

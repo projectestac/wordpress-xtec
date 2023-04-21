@@ -1,27 +1,29 @@
 <?php
 
-function get_all_scripts() {
-	$basedir = dirname(__FILE__).'/';
+function get_all_scripts(): array {
+    $basedir = __DIR__ . '/';
+    $scriptsfiles = glob($basedir . 'script_*.class.php');
+    $scripts = [];
 
-	$scriptsfiles = glob ($basedir.'script_*.class.php');
-	$scripts = array();
-	foreach ($scriptsfiles as $scriptpath) {
-		require_once($scriptpath);
-		$file = str_replace($basedir, '', $scriptpath);
-		$class = str_replace('.class.php', '', $file);
-		$script = new $class();
-		$scripts[$class] = $script;
-	}
-	return $scripts;
+    foreach ($scriptsfiles as $scriptpath) {
+        require_once($scriptpath);
+        $file = str_replace($basedir, '', $scriptpath);
+        $class = str_replace('.class.php', '', $file);
+        $script = new $class();
+        $scripts[$class] = $script;
+    }
+
+    return $scripts;
 }
 
-function scripts_execute_script($scriptclass) {
-	$basedir = dirname(__FILE__).'/';
-	if (!file_exists($basedir.$scriptclass.'.class.php')) {
-		echo 'Script '.$scriptclass.' not found';
-		return false;
-	}
-	require_once($scriptclass.'.class.php');
-	$script = new $scriptclass();
-	return $script->execute();
+function scripts_execute_script(string $scriptclass) {
+    $basedir = __DIR__ . '/';
+
+    if (!file_exists($basedir . $scriptclass . '.class.php')) {
+        echo 'Script ' . $scriptclass . ' not found';
+        return false;
+    }
+
+    require_once($scriptclass . '.class.php');
+    return (new $scriptclass())->execute();
 }

@@ -3,15 +3,11 @@
 require_once('agora_script_base.class.php');
 
 class script_replace_email_subscribers extends agora_script_base {
-    public $title = 'Corregeix els paràmetres de l\'Email Subscribers';
-    public $info = 'A la taula wp_options, revisa els URL de l\'Email Subscribers i els textos, tot modificant el nom i l\'adreça de correu del centre si no és correcta';
 
-    public function params() {
-        $params = [];
-        return $params;
-    }
+    public string $title = 'Corregeix els paràmetres de l\'Email Subscribers';
+    public string $info = 'A la taula wp_options, revisa els URL de l\'Email Subscribers i els textos, tot modificant el nom i l\'adreça de correu del centre si no és correcta';
 
-    protected function _execute($params = []) {
+    protected function _execute($params = []): bool {
         $this->replace_urls();
         $this->replace_mail_strings();
 
@@ -33,7 +29,7 @@ class script_replace_email_subscribers extends agora_script_base {
 
             $row = get_option($field);
 
-            if (isset($row) && (!empty($row))) {
+            if ((!empty($row))) {
                 $parts   = explode("?", $row);
                 $new_url = WP_SITEURL . '?' . $parts[1];
 

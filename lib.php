@@ -1,11 +1,11 @@
 <?php
 
-/*
+/**
  * This file contains extra functions for Agora and XTECBlocs services
  */
 
-CONST XTECADMIN_USERNAME = 'xtecadmin';
-CONST ADMIN_USERNAME = 'admin';
+const XTECADMIN_USERNAME = 'xtecadmin';
+const ADMIN_USERNAME = 'admin';
 
 
 /**
@@ -13,7 +13,7 @@ CONST ADMIN_USERNAME = 'admin';
  *
  * @return boolean
  */
-function is_xtecblocs() {
+function is_xtecblocs(): bool {
     global $isBlocs;
     return $isBlocs;
 }
@@ -23,7 +23,7 @@ function is_xtecblocs() {
  *
  * @return boolean
  */
-function is_agora() {
+function is_agora(): bool {
     global $isAgora;
     return $isAgora;
 }
@@ -34,38 +34,37 @@ function is_agora() {
  *
  * @return boolean
  */
-function is_xtec_super_admin() {
+function is_xtec_super_admin(): bool {
     return is_xtecadmin() || is_blocsadmin();
 }
 
-/*
+/**
  * Check if current logged user is Agora xtecadmin
  */
-function is_xtecadmin() {
+function is_xtecadmin(): bool {
     global $current_user, $isAgora;
-    return $isAgora && isset($current_user->user_login) && ($current_user->user_login == 'xtecadmin');
+    return $isAgora && isset($current_user->user_login) && ($current_user->user_login === 'xtecadmin');
 }
 
-/*
+/**
  * Check if current logged user is blocs admin
  */
-function is_blocsadmin() {
+function is_blocsadmin(): bool {
     global $isBlocs;
     return $isBlocs && is_super_admin();
 }
 
-/*
+/**
  * Get the ID of xtecadmin user.
- * Deprecated. Use constant instead of this.
+ * @return int ID of xtecadmin
+ * @deprecated. Use constant instead of this.
  *
- * return int ID of xtecadmin
  */
-function get_xtecadmin_id() {
-
+function get_xtecadmin_id(): int {
     return get_user_by('login', 'xtecadmin')->ID;
 }
 
-/*
+/**
  * Get the username of xtecadmin
  *
  * return string username of xtecadmin
@@ -80,7 +79,7 @@ function get_xtecadmin_username() {
  *
  * @throws Exception
  */
-function save_stats() {
+function save_stats(): void {
 
     global $current_user, $table_prefix, $wpdb;
 
@@ -94,27 +93,27 @@ function save_stats() {
     $ip = $ipForward = $ipClient = $userAgent = $uri = '';
 
     // Usage of filter_input() guarantees that info is clean
-    if (isset($_SERVER['REMOTE_ADDR']) && !empty($_SERVER['REMOTE_ADDR'])) {
+    if (!empty($_SERVER['REMOTE_ADDR'])) {
         $ip = filter_input(INPUT_SERVER, 'REMOTE_ADDR', FILTER_SANITIZE_STRING);
     }
 
-    if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
         $ipForward = filter_input(INPUT_SERVER, 'HTTP_X_FORWARDED_FOR', FILTER_SANITIZE_STRING);
     }
 
-    if (isset($_SERVER['HTTP_CLIENT_IP']) && !empty($_SERVER['HTTP_CLIENT_IP'])) {
+    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
         $ipClient = filter_input(INPUT_SERVER, 'HTTP_CLIENT_IP', FILTER_SANITIZE_STRING);
     }
 
-    if (isset($_SERVER['HTTP_USER_AGENT']) && !empty($_SERVER['HTTP_USER_AGENT'])) {
+    if (!empty($_SERVER['HTTP_USER_AGENT'])) {
         $userAgent = filter_input(INPUT_SERVER, 'HTTP_USER_AGENT', FILTER_SANITIZE_STRING);
     }
 
-    if (isset($_SERVER['REQUEST_URI']) && !empty($_SERVER['REQUEST_URI'])) {
+    if (!empty($_SERVER['REQUEST_URI'])) {
         $uri = filter_input(INPUT_SERVER, 'REQUEST_URI', FILTER_SANITIZE_STRING);
-        if (strrpos($uri, 'admin-ajax.php') && $_REQUEST['action']!=null) {
+        if ($_REQUEST['action'] !== null && strrpos($uri, 'admin-ajax.php')) {
             // Added action information to ajax callbacks
-            $uri .='?action='.$_REQUEST['action'];
+            $uri .= '?action=' . $_REQUEST['action'];
         }
     }
 
@@ -125,16 +124,16 @@ function save_stats() {
     $isadmin = current_user_can('manage_options');
 
     $content = NULL;
-    $action = array_key_exists('action', $_REQUEST)?$_REQUEST['action']:'';
+    $action = array_key_exists('action', $_REQUEST) ? $_REQUEST['action'] : '';
     // Save additional information in some cases
     switch ($action) {
         case 'delete_activity':
         case 'delete_activity_comment':
             // Deleting bp-activity
-            $result = array( 'id' => $_REQUEST['id']);
+            $result = array('id' => $_REQUEST['id']);
             $query = "
                     SELECT content FROM $table_prefix" . "bp_activity
-                    WHERE id='".$result['id']."'
+                    WHERE id='" . $result['id'] . "'
                     ";
             $result['content'] = $wpdb->get_var($query);
             $content = var_export($result, true);
@@ -144,10 +143,10 @@ function save_stats() {
             // Editing bp-forum topic
             if (!$_REQUEST['bbp_log_topic_edit']) {
                 // Only save information on stats table if log button is disabled
-                $result = array( 'id' => $_REQUEST['bbp_topic_id']);
+                $result = array('id' => $_REQUEST['bbp_topic_id']);
                 $query = "
                         SELECT post_content, post_title FROM $table_prefix" . "posts
-                        WHERE id=".$result['id']."
+                        WHERE id=" . $result['id'] . "
                         ";
                 $tmp_result = $wpdb->get_results($query);
                 $result['old_content'] = $tmp_result[0]->post_content;
@@ -159,10 +158,10 @@ function save_stats() {
             // Editing bp-forum reply
             if (!$_REQUEST['bbp_log_reply_edit']) {
                 // Only save information on stats table if log button is disabled
-                $result = array( 'id' => $_REQUEST['bbp_reply_id']);
+                $result = array('id' => $_REQUEST['bbp_reply_id']);
                 $query = "
                         SELECT post_content FROM $table_prefix" . "posts
-                        WHERE id=".$result['id']."
+                        WHERE id=" . $result['id'] . "
                         ";
                 $result['old_content'] = $wpdb->get_var($query);
                 $content = var_export($result, true);
@@ -170,7 +169,7 @@ function save_stats() {
             break;
     }
 
-    $data = array(
+    $data = [
         'datetime' => $datetime,
         'ip' => $ip,
         'ipForward' => $ipForward,
@@ -181,8 +180,8 @@ function save_stats() {
         'isadmin' => $isadmin,
         'username' => $username,
         'email' => $email
-    );
-    $fields = array('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s');
+    ];
+    $fields = ['%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s'];
 
     if (!is_null($content)) {
         $data['content'] = $content;
@@ -213,11 +212,9 @@ function save_stats() {
             if ($include_admin === false) {
                 add_option('xtec-stats-include-admin', 'on');
             }
-        } else {
-            if (!$isadmin || ($isadmin && $include_admin == 'on')) {
-                // Increase the number of visits by 1
-                update_option('xtec-stats-visits', (int) $visits + 1);
-            }
+        } elseif (!$isadmin || ($include_admin === 'on')) {
+            // Increase the number of visits by 1
+            update_option('xtec-stats-visits', (int)$visits + 1);
         }
     }
 }
@@ -229,18 +226,18 @@ function save_stats() {
  * @global object $wpdb
  * @author Toni Ginard
  */
-function remove_old_stats() {
+function remove_old_stats(): void {
     global $wpdb;
 
-    $time = strtotime("-1 year", time());
+    $time = strtotime("-1 year");
     $datetime = date('Y-m-d H:i:s', $time);
 
     $table = $wpdb->prefix . 'stats';
-    $wpdb->query( "DELETE FROM `$table` WHERE datetime < '$datetime' ");
+    $wpdb->query("DELETE FROM `$table` WHERE datetime < '$datetime' ");
 
-    $time = strtotime("-2 month", time());
+    $time = strtotime("-2 month");
     $datetime = date('Y-m-d H:i:s', $time);
-    $search_bots = array (
+    $search_bots = array(
         'Baidu',
         'Googlebot',
         'Yahoo',
@@ -250,12 +247,12 @@ function remove_old_stats() {
         'DotBot',
         'Gecko/20100101 Firefox/6.0.2'
     );
-    $where = "WHERE datetime < '$datetime' AND (`userAgent` like '%" . implode( '%\' or `userAgent` like \'%', $search_bots ) . "%')";
+    $where = "WHERE datetime < '$datetime' AND (`userAgent` like '%" . implode('%\' or `userAgent` like \'%', $search_bots) . "%')";
 
-    $wpdb->query( "DELETE FROM `$table` $where");
+    $wpdb->query("DELETE FROM `$table` $where");
 }
 
-function parse_cli_args() {
+function parse_cli_args(): void {
     global $cliargs;
     $cliargs = array();
     $rawoptions = $_SERVER['argv'];
@@ -270,7 +267,7 @@ function parse_cli_args() {
             $value = substr($raw, 2);
             $parts = explode('=', $value);
             if (count($parts) == 1) {
-                $key   = reset($parts);
+                $key = reset($parts);
                 $value = true;
             } else {
                 $key = array_shift($parts);
@@ -283,7 +280,7 @@ function parse_cli_args() {
             $value = substr($raw, 1);
             $parts = explode('=', $value);
             if (count($parts) == 1) {
-                $key   = reset($parts);
+                $key = reset($parts);
                 $value = true;
             } else {
                 $key = array_shift($parts);
@@ -295,7 +292,7 @@ function parse_cli_args() {
     }
 }
 
-function get_cli_arg($arg){
+function get_cli_arg($arg) {
     global $cliargs;
     if (empty($cliargs)) {
         parse_cli_args();

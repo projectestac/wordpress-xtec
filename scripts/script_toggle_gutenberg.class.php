@@ -4,8 +4,8 @@ require_once('agora_script_base.class.php');
 
 class script_toggle_gutenberg extends agora_script_base {
 
-    public $title = 'Activa o desactiva l\'editor Gutenberg';
-    public $info = 'Permet indicar si el Nodes ha d\'utilitzar l\'editor clàssic o el Gutenberg<br /><br />
+    public string $title = 'Activa o desactiva l\'editor Gutenberg';
+    public string $info = 'Permet indicar si el Nodes ha d\'utilitzar l\'editor clàssic o el Gutenberg<br /><br />
                     gutenberg: on per activar / off per desactivar';
 
     public function params(): array {
@@ -15,7 +15,7 @@ class script_toggle_gutenberg extends agora_script_base {
         return $params;
     }
 
-    protected function _execute($params = []) {
+    protected function _execute($params = []): bool {
 
         define('OPTIONS_KEY', 'tadv_admin_settings');
         define('TINYMCE_KEY', 'replace_block_editor');
@@ -53,7 +53,7 @@ class script_toggle_gutenberg extends agora_script_base {
 
                 // Check if option is set
                 if (strpos($tadv_admin_settings['options'], TINYMCE_KEY) === false) {
-                    // Add the keyword only or a comma and the keyword depending on if the string if empty or not
+                    // Add the keyword only or a comma and the keyword depending on if the string is empty or not
                     if (empty($tadv_admin_settings['options'])) {
                         $tadv_admin_settings['options'] = TINYMCE_KEY;
                     } else {
