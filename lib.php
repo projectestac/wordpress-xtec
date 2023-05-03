@@ -111,7 +111,7 @@ function save_stats(): void {
 
     if (!empty($_SERVER['REQUEST_URI'])) {
         $uri = filter_input(INPUT_SERVER, 'REQUEST_URI', FILTER_SANITIZE_STRING);
-        if ($_REQUEST['action'] !== null && strrpos($uri, 'admin-ajax.php')) {
+        if (isset($_REQUEST['action']) && strrpos($uri, 'admin-ajax.php')) {
             // Added action information to ajax callbacks
             $uri .= '?action=' . $_REQUEST['action'];
         }
