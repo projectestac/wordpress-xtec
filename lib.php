@@ -13,7 +13,7 @@ CONST ADMIN_USERNAME = 'admin';
  *
  * @return boolean
  */
-function is_xtecblocs() {
+function is_xtecblocs(): bool {
     global $isBlocs;
     return $isBlocs;
 }
@@ -23,7 +23,7 @@ function is_xtecblocs() {
  *
  * @return boolean
  */
-function is_agora() {
+function is_agora(): bool {
     global $isAgora;
     return $isAgora;
 }
@@ -34,22 +34,22 @@ function is_agora() {
  *
  * @return boolean
  */
-function is_xtec_super_admin() {
+function is_xtec_super_admin(): bool {
     return is_xtecadmin() || is_blocsadmin();
 }
 
 /*
  * Check if current logged user is Agora xtecadmin
  */
-function is_xtecadmin() {
+function is_xtecadmin(): bool {
     global $current_user, $isAgora;
-    return $isAgora && isset($current_user->user_login) && ($current_user->user_login == 'xtecadmin');
+    return $isAgora && isset($current_user->user_login) && ($current_user->user_login === 'xtecadmin');
 }
 
 /*
  * Check if current logged user is blocs admin
  */
-function is_blocsadmin() {
+function is_blocsadmin(): bool {
     global $isBlocs;
     return $isBlocs && is_super_admin();
 }
@@ -60,8 +60,7 @@ function is_blocsadmin() {
  *
  * return int ID of xtecadmin
  */
-function get_xtecadmin_id() {
-
+function get_xtecadmin_id(): int {
     return get_user_by('login', 'xtecadmin')->ID;
 }
 
@@ -70,8 +69,7 @@ function get_xtecadmin_id() {
  *
  * return string username of xtecadmin
  */
-function get_xtecadmin_username() {
-
+function get_xtecadmin_username(): string {
     return 'xtecadmin';
 }
 
@@ -80,7 +78,7 @@ function get_xtecadmin_username() {
  *
  * @throws Exception
  */
-function save_stats() {
+function save_stats(): void {
 
     global $current_user, $table_prefix, $wpdb;
 
@@ -94,27 +92,27 @@ function save_stats() {
     $ip = $ipForward = $ipClient = $userAgent = $uri = '';
 
     // Usage of filter_input() guarantees that info is clean
-    if (isset($_SERVER['REMOTE_ADDR']) && !empty($_SERVER['REMOTE_ADDR'])) {
-        $ip = filter_input(INPUT_SERVER, 'REMOTE_ADDR', FILTER_SANITIZE_STRING);
+    if (!empty($_SERVER['REMOTE_ADDR'])) {
+        $ip = filter_input(INPUT_SERVER, 'REMOTE_ADDR', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     }
 
-    if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        $ipForward = filter_input(INPUT_SERVER, 'HTTP_X_FORWARDED_FOR', FILTER_SANITIZE_STRING);
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $ipForward = filter_input(INPUT_SERVER, 'HTTP_X_FORWARDED_FOR', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     }
 
-    if (isset($_SERVER['HTTP_CLIENT_IP']) && !empty($_SERVER['HTTP_CLIENT_IP'])) {
-        $ipClient = filter_input(INPUT_SERVER, 'HTTP_CLIENT_IP', FILTER_SANITIZE_STRING);
+    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+        $ipClient = filter_input(INPUT_SERVER, 'HTTP_CLIENT_IP', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     }
 
-    if (isset($_SERVER['HTTP_USER_AGENT']) && !empty($_SERVER['HTTP_USER_AGENT'])) {
-        $userAgent = filter_input(INPUT_SERVER, 'HTTP_USER_AGENT', FILTER_SANITIZE_STRING);
+    if (!empty($_SERVER['HTTP_USER_AGENT'])) {
+        $userAgent = filter_input(INPUT_SERVER, 'HTTP_USER_AGENT', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     }
 
-    if (isset($_SERVER['REQUEST_URI']) && !empty($_SERVER['REQUEST_URI'])) {
-        $uri = filter_input(INPUT_SERVER, 'REQUEST_URI', FILTER_SANITIZE_STRING);
-        if (strrpos($uri, 'admin-ajax.php') && $_REQUEST['action']!=null) {
+    if (!empty($_SERVER['REQUEST_URI'])) {
+        $uri = filter_input(INPUT_SERVER, 'REQUEST_URI', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        if (isset($_REQUEST['action']) && strrpos($uri, 'admin-ajax.php')) {
             // Added action information to ajax callbacks
-            $uri .='?action='.$_REQUEST['action'];
+            $uri .= '?action=' . $_REQUEST['action'];
         }
     }
 
@@ -213,11 +211,9 @@ function save_stats() {
             if ($include_admin === false) {
                 add_option('xtec-stats-include-admin', 'on');
             }
-        } else {
-            if (!$isadmin || ($isadmin && $include_admin == 'on')) {
-                // Increase the number of visits by 1
-                update_option('xtec-stats-visits', (int) $visits + 1);
-            }
+        } else if (!$isadmin || ($include_admin === 'on')) {
+            // Increase the number of visits by 1
+            update_option('xtec-stats-visits', (int) $visits + 1);
         }
     }
 }
@@ -229,16 +225,16 @@ function save_stats() {
  * @global object $wpdb
  * @author Toni Ginard
  */
-function remove_old_stats() {
+function remove_old_stats(): void {
     global $wpdb;
 
-    $time = strtotime("-1 year", time());
+    $time = strtotime("-1 year");
     $datetime = date('Y-m-d H:i:s', $time);
 
     $table = $wpdb->prefix . 'stats';
     $wpdb->query( "DELETE FROM `$table` WHERE datetime < '$datetime' ");
 
-    $time = strtotime("-2 month", time());
+    $time = strtotime("-2 month");
     $datetime = date('Y-m-d H:i:s', $time);
     $search_bots = array (
         'Baidu',
