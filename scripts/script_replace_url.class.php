@@ -20,15 +20,15 @@ class script_replace_url extends agora_script_base {
     <li>add_ccentre = 1</ul>
     ";
 
-    public function params() {
-        $params = array();
-        $params['origin_url'] = false;
-        $params['origin_bd'] = false;
-        $params['add_ccentre'] = false;
-        return $params;
+    public function params(): array {
+        return [
+            'origin_url' => false,
+            'origin_bd' => false,
+            'add_ccentre' => false,
+        ];
     }
 
-    protected function _execute($params = array()) {
+    protected function _execute($params = []) {
         global $wpdb;
 
         // If this is specified, only replace URLs
@@ -36,34 +36,35 @@ class script_replace_url extends agora_script_base {
             $params['origin_url'] = str_replace('http://', '://', $params['origin_url']);
             $params['origin_url'] = str_replace('https://', '://', $params['origin_url']);
             $replaceURL = trim($params['origin_url']);
+
             // When called from CLI, $params['add_ccentre'] is not defined.
             if (isset($params['add_ccentre']) && $params['add_ccentre']) {
-                $replaceURL .= CENTRE.'/';
+                $replaceURL .= CENTRE . '/';
             }
-            $this->output("URL origen: ".$replaceURL);
+
+            $this->output("URL origen: " . $replaceURL);
         } else {
             $replaceURL = false;
         }
 
         $siteURL = WP_SITEURL;
-        $siteURL = str_replace('http://', '://', $siteURL);
-        $siteURL = str_replace('https://', '://', $siteURL);
+        $siteURL = str_replace(['http://', 'https://'], '://', $siteURL);
 
         // Si són iguals no cal reemplaçar res
-        if ($replaceURL == $siteURL) {
+        if ($replaceURL === $siteURL) {
             $replaceURL = false;
         }
 
-        $this->output("URL destí: ".$siteURL);
+        $this->output('URL destí: ' . $siteURL);
 
         if ($params['origin_bd']) {
             $replaceDB = trim($params['origin_bd']);
             // Si són iguals no cal reemplaçar res
-            if ($replaceDB == DB_NAME) {
+            if ($replaceDB === DB_NAME) {
                 $replaceDB = false;
             } else {
-                $this->output("DB origen: " . $replaceDB);
-                $this->output("DB destí: " . DB_NAME);
+                $this->output('DB origen: ' . $replaceDB);
+                $this->output('DB destí: ' . DB_NAME);
             }
         } else {
             $replaceDB = false;
@@ -73,31 +74,50 @@ class script_replace_url extends agora_script_base {
         update_option('home', WP_SITEURL);
         update_option('wsl_settings_redirect_url', WP_SITEURL);
 
-        $replace = array('bp_activity' => array('action' => false,
-                                                'content' => false,
-                                                'primary_link' => false),
-                        'posts' => array('post_content' => false,
-                                        'post_excerpt' => false,
-                                        'guid' => false),
-                        'term_taxonomy' => array('description' => false),
-                        'postmeta' => array('meta_value' => "meta_key = '_menu_item_url'")
-                    );
+        $replace = [
+            'bp_activity' => [
+                'action' => false,
+                'content' => false,
+                'primary_link' => false,
+            ],
+            'posts' => [
+                'post_content' => false,
+                'post_excerpt' => false,
+                'guid' => false,
+            ],
+            'term_taxonomy' => [
+                'description' => false,
+            ],
+            'postmeta' => [
+                'meta_value' => "meta_key = '_menu_item_url'",
+            ],
+        ];
 
         // Email Subscribers
         $table_name = $wpdb->prefix . 'es_pluginconfig';
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name) { // Check for table existence
-            $replace['es_pluginconfig'] = array('es_c_optinlink' => false, 'es_c_unsublink' => false);
+        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name) { // Check for table existence
+            $replace['es_pluginconfig'] = ['es_c_optinlink' => false, 'es_c_unsublink' => false];
         }
 
         foreach ($replace as $tablename => $fields) {
             foreach ($fields as $fieldname => $and) {
-                if ($replaceURL) {
-                    if (!$this->replace_sql($tablename, $fieldname, $replaceURL, $siteURL, $and)) {
-                        return false;
-                    }
+                if ($replaceURL && !$this->replace_sql($tablename, $fieldname, $replaceURL, $siteURL, $and)) {
+                    return false;
                 }
+                if ($replaceDB && !$this->replace_sql($tablename, $fieldname, '/' . $replaceDB . '/', '/' . DB_NAME . '/')) {
+                    return false;
+                }
+            }
+        }
 
-                if ($replaceDB) {
+        if ($replaceDB) {
+            $replace = [
+                'bp_activity' => ['content'],
+                'posts' => ['post_content', 'guid'],
+            ];
+
+            foreach ($replace as $tablename => $fields) {
+                foreach ($fields as $fieldname) {
                     if (!$this->replace_sql($tablename, $fieldname, '/' . $replaceDB . '/', '/' . DB_NAME . '/')) {
                         return false;
                     }
@@ -105,22 +125,8 @@ class script_replace_url extends agora_script_base {
             }
         }
 
-        if ($replaceDB) {
-            $replace = array(
-                'bp_activity' => array('content'),
-                'posts' => array('post_content', 'guid')
-                );
-            foreach ($replace as $tablename => $fields) {
-                foreach ($fields as $fieldname) {
-                    if (!$this->replace_sql($tablename, $fieldname, '/'.$replaceDB.'/', '/'.DB_NAME.'/')) {
-                        return false;
-                    }
-                }
-            }
-        }
-
         echo "Update serialized wp_options fields\n";
-        $options = array ('my_option_name', 'widget_text', 'reactor_options', 'widget_socialmedia_widget', 'widget_xtec_widget', 'widget_grup_classe_widget');
+        $options = ['my_option_name', 'widget_text', 'reactor_options', 'widget_socialmedia_widget', 'widget_xtec_widget', 'widget_grup_classe_widget'];
         foreach ($options as $option) {
             $value = get_option($option);
 
@@ -131,7 +137,7 @@ class script_replace_url extends agora_script_base {
 
             // Update user database recursively
             if ($replaceDB) {
-                $value = $this->replaceTree('/'.$replaceDB.'/', '/'.DB_NAME.'/', $value);
+                $value = $this->replaceTree('/' . $replaceDB . '/', '/' . DB_NAME . '/', $value);
             }
 
             update_option($option, $value);
@@ -170,7 +176,7 @@ class script_replace_url extends agora_script_base {
             return true;
         }
 
-        $tablename = $wpdb->prefix.$table;
+        $tablename = $wpdb->prefix . $table;
         $sql = "UPDATE $tablename SET `$field` = REPLACE (`$field` , '$search', '$replace')
                 WHERE `$field` like '%$search%'";
         if ($and) {
@@ -198,7 +204,7 @@ class script_replace_url extends agora_script_base {
             return str_replace($search, $replace, $array);
         }
 
-        $newArray = array();
+        $newArray = [];
         foreach ($array as $k => $v) {
             // Recursive call
             $newArray[$k] = $this->replaceTree($search, $replace, $v);
@@ -209,8 +215,9 @@ class script_replace_url extends agora_script_base {
 
     /**
      * Checks if a value is serialized
-     * @author Toni Ginard
+     *
      * @return boolean true or false
+     * @author Toni Ginard
      */
     private function is_serialized($data) {
         $data_unserialized = @unserialize($data);

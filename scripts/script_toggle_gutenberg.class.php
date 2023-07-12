@@ -9,10 +9,9 @@ class script_toggle_gutenberg extends agora_script_base {
                     gutenberg: on per activar / off per desactivar';
 
     public function params(): array {
-        $params = [];
-        $params['gutenberg'] = '';
-
-        return $params;
+        return [
+            'gutenberg' => '',
+        ];
     }
 
     protected function _execute($params = []) {

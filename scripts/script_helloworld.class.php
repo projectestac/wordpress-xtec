@@ -2,20 +2,20 @@
 
 require_once('agora_script_base.class.php');
 
-class script_helloworld extends agora_script_base{
+class script_helloworld extends agora_script_base {
 
-	public $title = 'Hello world';
-	public $info = "Saluda a qui diguis";
+    public $title = 'Hello world';
+    public $info = "Saluda a qui diguis";
 
 
-	public function params(){
-		$params = array();
-		$params['name'] = "";
-		return $params;
-	}
+    public function params(): array {
+        return [
+            'name' => '',
+        ];
+    }
 
-	protected function _execute($params = array()){
-		echo 'Hello '.$params['name'];
-		return true;
-	}
+    protected function _execute($params = []) {
+        echo 'Hello ' . $params['name'];
+        return true;
+    }
 }
