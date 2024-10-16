@@ -8,16 +8,18 @@ class script_replace_url extends agora_script_base {
     public $info = "
     <ul>
     <li>add_ccentre és un booleà que defineix si a la origin_url se li afegeix el nom del centre al final. (Útil quan es més d'un centre alhora)</li>
-    <li>La URL ha d'acabar amb / al final</li>
-    <li>La URL de destí sempre serà WP_SITEURL (del centre en particular)</li>
-    <li>Si la URL o la BD són buides no farà el replace de URL o DB respectivament</li>
+    <li>L'URL ha d'acabar amb / al final</li>
+    <li>L'URL de destí sempre serà WP_SITEURL (del centre en particular)</li>
+    <li>Si l'URL o la BD són buides no farà el replace de l'URL o la DB respectivament</li>
     <li>La BD de destí sempre serà DB_NAME</li>
-    <li>origin_bd només s'ha d'especificar si canvia la base de dades (activedId)</li>
+    <li>origin_bd només s'ha d'especificar si canvia la base de dades (db_id)</li>
     </ul>
-    Exemple:
-    <ul><li>origin_url = ://agora/agora/
-    <li>origin_bd = DB-int
-    <li>add_ccentre = 1</ul>
+    <p>Exemple:</p>
+    <ul>
+    <li>origin_url = ://agora-aws.xtec.cat/agora/</li>
+    <li>origin_bd = usu100</li>
+    <li>add_ccentre = 1</li>
+    </ul>
     ";
 
     public function params(): array {
@@ -29,12 +31,13 @@ class script_replace_url extends agora_script_base {
     }
 
     protected function _execute($params = []) {
+
         global $wpdb;
 
         // If this is specified, only replace URLs
         if ($params['origin_url']) {
-            $params['origin_url'] = str_replace('http://', '://', $params['origin_url']);
-            $params['origin_url'] = str_replace('https://', '://', $params['origin_url']);
+
+            $params['origin_url'] = str_replace(['http://', 'https://'], '://', $params['origin_url']);
             $replaceURL = trim($params['origin_url']);
 
             // When called from CLI, $params['add_ccentre'] is not defined.
@@ -42,7 +45,8 @@ class script_replace_url extends agora_script_base {
                 $replaceURL .= CENTRE . '/';
             }
 
-            $this->output("URL origen: " . $replaceURL);
+            $this->output('URL origen: ' . $replaceURL);
+
         } else {
             $replaceURL = false;
         }
@@ -126,7 +130,17 @@ class script_replace_url extends agora_script_base {
         }
 
         echo "Update serialized wp_options fields\n";
-        $options = ['my_option_name', 'widget_text', 'reactor_options', 'widget_socialmedia_widget', 'widget_xtec_widget', 'widget_grup_classe_widget'];
+
+        $options = [
+            'my_option_name',
+            'widget_text',
+            'reactor_options',
+            'widget_socialmedia_widget',
+            'widget_xtec_widget',
+            'widget_grup_classe_widget',
+            'theme_mods_astra',
+        ];
+
         foreach ($options as $option) {
             $value = get_option($option);
 
@@ -223,4 +237,5 @@ class script_replace_url extends agora_script_base {
         $data_unserialized = @unserialize($data);
         return ($data === 'b:0;' || $data_unserialized !== false);
     }
+
 }
