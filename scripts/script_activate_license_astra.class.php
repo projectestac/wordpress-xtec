@@ -31,10 +31,12 @@ class script_activate_license_astra extends agora_script_base {
 
         // verificar la respuesta
         if ( is_wp_error( $response ) ) {
-            echo 'Error: ' . $response->get_error_message();
+            $this->output('Hi ha hagut un problema amb la llicència.', 'WARNING');
         } else {
-            print_r( $response );
+            $this->output('Llicència activada correctament.', 'INFO');
         }
+
+        print_r( $response );
 
         return true;
     }
