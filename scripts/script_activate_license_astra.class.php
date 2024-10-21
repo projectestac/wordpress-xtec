@@ -27,8 +27,6 @@ class script_activate_license_astra extends agora_script_base {
         $request->set_param( 'product-id', 'astra-addon' );
         $request->set_param( 'license-key', $params['license_key'] );
 
-        error_log( 'Activant la llicència Astra Pro amb la clau: ' . $params['license_key'] );
-
         $response = $bsf_core_rest->activate_license( $request );
 
         // verificar la respuesta
