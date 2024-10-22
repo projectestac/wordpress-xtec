@@ -22,7 +22,7 @@ class script_activate_license_astra extends agora_script_base {
         $bsf_core_rest = Bsf_Core_Rest::get_instance();
 
         // crear una nueva instancia de WP_REST_Request
-        $request = new WP_REST_Request( 'POST', 'bsf-core/v1/license/activate' );
+        $request = new WP_REST_Request( 'POST', get_site_url() . '/wp-json/bsf-core/v1/license/activate' );
 
         $request->set_param( 'product-id', 'astra-addon' );
         $request->set_param( 'license-key', $params['license_key'] );
@@ -33,10 +33,17 @@ class script_activate_license_astra extends agora_script_base {
         if ( is_wp_error( $response ) ) {
             $this->output('Hi ha hagut un problema amb la llicència.', 'WARNING');
         } else {
-            $this->output('Llicència activada correctament.', 'INFO');
+            if( $response->get_data()['success'] === false ) {
+                $this->output('La clau de compra no és vàlida.', 'WARNING');
+            }
+
+            else {
+                $this->output('Llicència activada correctament.', 'INFO');
+            }
         }
 
-        print_r( $response );
+        // guardar en logs por si acaso
+        echo json_encode( $response , true );
 
         return true;
     }
