@@ -5,7 +5,7 @@ require_once('agora_script_base.class.php');
 class script_enable_service extends agora_script_base {
 
     public $title = 'Activa el servei Àgora-Nodes';
-    public $info = "Fa els passos necessàris per activar Wordpress i deixar-lo a punt per començar";
+    public $info = "Fa els passos necessàris per activar el Nodes i deixar-lo a punt per començar";
 
     public function params(): array {
         return [
@@ -44,12 +44,19 @@ class script_enable_service extends agora_script_base {
         update_option('wsl_settings_redirect_url', WP_SITEURL);
 
         $this->output('Updating school name and address');
+
+        // Reactor
         $value = get_option('reactor_options');
         $value['nomCanonicCentre'] = $clientName;
         $value['direccioCentre'] = $clientAddress;
         $value['cpCentre'] = $clientPCCity;
-        $value['nomCanonicCentre'] = $clientName;
         update_option('reactor_options', $value);
+
+        // Astra
+        $value = get_option('theme_mods_astra');
+        $value['astra_nodes_options']['postal_address'] = $clientAddress;
+        $value['astra_nodes_options']['postal_code_city'] = $clientPCCity;
+        update_option('theme_mods_astra', $value);
 
         $this->output('Configuring admin user');
         $user = get_user_by('login', 'admin');
@@ -110,24 +117,6 @@ class script_enable_service extends agora_script_base {
             return false;
         }
         $wpdb->show_errors();
-
-        return true;
-    }
-
-    private function replace_sql($table, $field, $search, $replace): bool {
-        global $wpdb;
-
-        if (empty($search) || empty($replace)) {
-            return true;
-        }
-
-        $tablename = $wpdb->prefix . $table;
-        $sql = "UPDATE $tablename SET `$field` = REPLACE (`$field` , '$search', '$replace')
-                WHERE `$field` like '%$search%'";
-
-        if (!$this->execute_sql($sql)) {
-            return false;
-        }
 
         return true;
     }
