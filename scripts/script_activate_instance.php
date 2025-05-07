@@ -27,9 +27,6 @@ class script_activate_instance extends agora_script_base {
     }
 
     protected function _execute($params = []) {
-
-        error_log('_execute ' . __FILE__ . ' ' . __LINE__);
-
         $newDbId = $params['newDbId'];
 
         $errors = [];
@@ -45,9 +42,6 @@ class script_activate_instance extends agora_script_base {
         $instance->model_type_id    = $params['instance_model_type_id'] ?? null;
         $instance->contact_name     = $params['instance_contact_name']  ?? null;
         $instance->observations     = $params['instance_observations']  ?? null;
-        // $instance->requested_at     = $params['instance_requested_at']  ?? null;
-        // $instance->updated_at       = $params['instance_updated_at']    ?? null;
-        // $instance->created_at       = $params['instance_created_at']    ?? null;
         $instance->id               = $params['instance_id']            ?? null;
 
         // Attempt to activate the instance
