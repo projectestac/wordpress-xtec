@@ -19,6 +19,8 @@ class script_enable_service extends agora_script_base {
             'clientCode' => '',
             'origin_url' => '',
             'origin_bd' => '',
+            'dbFile' => '',
+            'dataFile' => '',
         ];
     }
 
@@ -30,6 +32,12 @@ class script_enable_service extends agora_script_base {
         $clientAddress = $params['clientAddress'];
         $clientPCCity = $params['clientPC'] . ' ' . $params['clientCity']; // Post Code and City
         $adminMail = $params['clientCode'] . '@xtec.cat';
+        $dbFile = $params['dbFile'];
+        $dataFile = $params['dataFile'];
+
+        if ($this->dumpDatabase($dbFile)){
+            $this->output('Dumped database file: ' . $dbFile);
+        }
 
         $this->output('Set Blog name to ' . $clientName);
         update_option('blogname', $clientName);
@@ -65,8 +73,11 @@ class script_enable_service extends agora_script_base {
             [
                 'user_pass' => $params['password'],
                 'user_email' => $adminMail, 
-                'user_registered' => date('Y-m-d H:i:s')],
-            ['ID' => $user->ID]
+                'user_registered' => date('Y-m-d H:i:s')
+            ],
+            [
+                'ID' => $user->ID
+            ]
         );
 
         $this->output('Configuring xtecadmin user');
@@ -119,6 +130,52 @@ class script_enable_service extends agora_script_base {
         $wpdb->show_errors();
 
         return true;
+    }
+
+    private function dumpDatabase(string $dbFile): bool {
+
+        global $wpdb;
+
+        // Temporary variable, used to store the current query.
+        $currentSQL = '';
+
+        // Read the entire file.
+        $lines = file($dbFile);
+
+        // Loop through each line.
+        foreach ($lines as $line) {
+
+            // Skip it if it's a comment or an empty line.
+            if ($line === '' || $line === "\n" || str_starts_with($line, '--') || str_starts_with($line, '/*!') || str_starts_with($line, '#')) {
+                continue;
+            }
+
+            // Add this line to the current segment.
+            $currentSQL .= $line;
+
+            // Detection of sentences. If it has a semicolon at the end, it's the end of the query.
+            $executeQuery = str_ends_with(trim($line), ';');
+
+            // Note: this script is not able to create the database. It must previously exist.
+            if ($executeQuery) {
+                try {
+                    $result = $wpdb->query($currentSQL);
+                    if ($result === false) {
+                        echo 'Error dumping database file: ' . $wpdb->last_error;
+                        return false;
+                    }
+                } catch (Throwable $e) {
+                    echo 'Error dumping database file: ' $e->getMessage();
+                    return false;
+                }
+                // Reset temp variable to empty.
+                $currentSQL = '';
+            }
+
+        }
+
+        return true;
+
     }
 
 }
