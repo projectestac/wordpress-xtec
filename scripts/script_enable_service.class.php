@@ -35,8 +35,23 @@ class script_enable_service extends agora_script_base {
         $dbFile = $params['dbFile'];
         $dataFile = $params['dataFile'];
 
-        if ($this->dumpDatabase($dbFile)){
-            $this->output('Dumped database file: ' . $dbFile);
+        // We extract slow functions from InstanceController->activateInstance to put them in an asynchronous job
+        if ($this->createDatabaseFromBaseFile($dbFile, $params['origin_bd'])){
+            $this->output('Created database from file: ' . $dbFile);
+        }
+
+        else {
+            $this->output('Error creating database from file: ' . $dbFile, 'ERROR');
+            return false;
+        }
+
+        if ($this->unzipBaseFiles($dataFile)){
+            $this->output('Unzipped base files: ' . $dataFile);
+        }
+
+        else {
+            $this->output('Error unzipping base files: ' . $dataFile, 'ERROR');
+            return false;
         }
 
         $this->output('Set Blog name to ' . $clientName);
@@ -132,12 +147,28 @@ class script_enable_service extends agora_script_base {
         return true;
     }
 
-    private function dumpDatabase(string $dbFile): bool {
+    private function createDatabaseFromBaseFile(string $dbFile, string $dbName): bool {
 
         global $wpdb;
 
         // Temporary variable, used to store the current query.
         $currentSQL = '';
+
+        // Check if the file exists.
+        if (!file_exists($dbFile)) {
+            echo 'Error: Database file does not exist: ' . $dbFile;
+            return false;
+        }
+
+        // Create the database if it doesn't exist.
+        $this->wpdb->statement("CREATE DATABASE IF NOT EXISTS $dbName");
+        if ($this->wpdb->error) {
+            echo 'Error creating database: ' . $this->wpdb->error;
+            return false;
+        }
+
+        // Select the database.
+        $wpdb->select($dbName);
 
         // Read the entire file.
         $lines = file($dbFile);
@@ -161,11 +192,11 @@ class script_enable_service extends agora_script_base {
                 try {
                     $result = $wpdb->query($currentSQL);
                     if ($result === false) {
-                        echo 'Error dumping database file: ' . $wpdb->last_error;
+                        echo 'Error importing database file: ' . $wpdb->last_error;
                         return false;
                     }
                 } catch (Throwable $e) {
-                    echo 'Error dumping database file: ' $e->getMessage();
+                    echo 'Error importing database file: ' . $e->getMessage();
                     return false;
                 }
                 // Reset temp variable to empty.
@@ -175,6 +206,48 @@ class script_enable_service extends agora_script_base {
         }
 
         return true;
+
+    }
+
+    private function unzipBaseFiles(string $dataFile): bool {
+
+        $serviceKey = 'nodes';
+        $dataDir = Util::getAgoraVar('nodesdata');
+
+        $messages = [];
+
+        // Directory for the new site files
+        $dbName = config("app.agora.$serviceKey.userprefix") . $instanceId;
+        $targetDir = $dataDir . $dbName . '/';
+
+        // If the directory doesn't exist, create it.
+        if (!is_dir($targetDir)) {
+            if (mkdir($targetDir, 0777, true) || is_dir($targetDir)) {
+                $messages[] = __('instances.dir_created', ['dir' => $targetDir]);
+            } else {
+                return ['error' => __('instances.dir_not_created', ['dir' => $targetDir])];
+            }
+        }
+
+        // Extract the files.
+        $zip = new ZipArchive();
+
+        $resource = $zip->open($dataFile);
+        if (!$resource) {
+            return ['error' => __('instances.file_not_opened', ['file' => $dataFile])];
+        }
+
+        // Try to extract the file.
+        if (!$zip->extractTo($targetDir)) {
+            $zip->close();
+            return ['error' => __('instances.unzip_error', ['file' => $dataFile, 'dir' => $targetDir])];
+        }
+
+        $zip->close();
+
+        $messages[] = __('instances.unzip_success', ['file' => $dataFile, 'dir' => $targetDir]);
+
+        return ['success' => $messages];
 
     }
 
