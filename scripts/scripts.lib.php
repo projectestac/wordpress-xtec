@@ -19,6 +19,26 @@ function get_all_scripts(): array
     return $scripts;
 }
 
+/**
+ * Get the list of scripts with the data needed to execute them from Àgora Portal.
+ */
+function scripts_api_list_scripts(): array
+{
+    $scripts = get_all_scripts();
+    $actions = [];
+
+    foreach ($scripts as $scriptname => $script) {
+        $action = new StdClass();
+        $action->action = $scriptname;
+        $action->title = $script->title;
+        $action->description = $script->info;
+        $action->params = array_keys($script->params());
+        $actions[] = $action;
+    }
+
+    return $actions;
+}
+
 function scripts_execute_script($scriptclass)
 {
     $basedir = __DIR__ . '/';
